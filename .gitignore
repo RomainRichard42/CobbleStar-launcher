@@ -1,0 +1,8 @@
+node_modules/
+release/
+dist/
+dist-electron/
+
+.env
+.env.*
+*.log
