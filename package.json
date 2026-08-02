@@ -1,7 +1,7 @@
 {
   "name": "cobblestar-launcher",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Launcher officiel du serveur Minecraft CobbleStar",
   "main": "dist-electron/main.js",
   "type": "module",
@@ -11,7 +11,7 @@
     "build:electron": "tsc -p electron/tsconfig.json",
     "build": "npm run build:web && npm run build:electron",
     "dist": "npm run build && electron-builder",
-    "publish:win": "npm run build && electron-builder --win --x64 --publish always",
+    "dist:win": "npm run build && electron-builder --win --x64",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -41,8 +41,7 @@
     "publish": {
       "provider": "github",
       "owner": "RomainRichard42",
-      "repo": "CobbleStar-launcher",
-      "releaseType": "release"
+      "repo": "CobbleStar-launcher"
     },
     "files": [
       "dist/**/*",

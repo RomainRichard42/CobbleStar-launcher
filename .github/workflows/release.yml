@@ -24,7 +24,24 @@ jobs:
       - name: Installer les dépendances
         run: npm ci
 
-      - name: Construire et publier la Release
-        run: npm run publish:win
+      - name: Construire l’installateur
+        run: npm run dist:win
+
+      - name: Vérifier les fichiers de mise à jour
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "release/latest.yml")) { throw "latest.yml est absent" }
+          if (-not (Get-ChildItem "release/*.exe")) { throw "L'installateur EXE est absent" }
+          if (-not (Get-ChildItem "release/*.exe.blockmap")) { throw "Le blockmap est absent" }
+
+      - name: Publier tous les fichiers dans la Release
+        shell: bash
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            release/*.exe \
+            release/*.exe.blockmap \
+            release/latest.yml \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
