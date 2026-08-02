@@ -37,12 +37,21 @@ export async function loginMicrosoft(window: BrowserWindow, clientId: string) {
     const microsoftResult = await application.acquireTokenByDeviceCode({
       scopes: ['XboxLive.signin', 'offline_access'],
       deviceCodeCallback: (response) => {
+        const compatibleResponse = response as typeof response & {
+          verification_uri?: string
+          user_code?: string
+        }
+        const verificationUri = compatibleResponse.verificationUri
+          ?? compatibleResponse.verification_uri
+          ?? 'https://microsoft.com/devicelogin'
+        const userCode = compatibleResponse.userCode ?? compatibleResponse.user_code ?? ''
+
         window.webContents.send('auth:device-code', {
-          userCode: response.userCode,
-          verificationUri: response.verificationUri,
+          userCode,
+          verificationUri,
           message: response.message,
         })
-        void shell.openExternal(response.verificationUri)
+        void shell.openExternal(verificationUri)
       },
     })
 

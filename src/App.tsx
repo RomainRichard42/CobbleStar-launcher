@@ -22,6 +22,13 @@ type AuthDialog =
   | { mode: 'device'; userCode: string; verificationUri: string; message: string }
   | { mode: 'error'; message: string }
   | null
+type UpdateStatus =
+  | { state: 'checking' }
+  | { state: 'available'; version: string }
+  | { state: 'downloading'; version: string; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'current'; version: string }
+  | { state: 'error'; message: string }
 
 export function App() {
   const [launchState, setLaunchState] = useState<LaunchState>('idle')
@@ -32,12 +39,18 @@ export function App() {
   const [account, setAccount] = useState<MinecraftAccount | null>(null)
   const [authenticating, setAuthenticating] = useState(false)
   const [authDialog, setAuthDialog] = useState<AuthDialog>(null)
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
 
   useEffect(() => {
     void window.cobblestar?.getAccount().then(setAccount)
-    return window.cobblestar?.onDeviceCode((payload) => {
+    const removeDeviceCodeListener = window.cobblestar?.onDeviceCode((payload) => {
       setAuthDialog({ mode: 'device', ...payload })
     })
+    const removeUpdateListener = window.cobblestar?.onUpdateStatus(setUpdateStatus)
+    return () => {
+      removeDeviceCodeListener?.()
+      removeUpdateListener?.()
+    }
   }, [])
 
   useEffect(() => {
@@ -174,10 +187,16 @@ export function App() {
           <div><small>VERSION DE JEU</small><strong>{launcherConfig.loader} {launcherConfig.minecraftVersion}</strong></div>
         </div>
         <div className="status-block">
-          {launchState === 'checking' ? (
+          {updateStatus?.state === 'downloading' ? (
+            <><div className="progress"><i style={{ width: `${updateStatus.percent}%` }} /></div><span>Mise à jour du launcher… {updateStatus.percent}%</span></>
+          ) : updateStatus?.state === 'downloaded' ? (
+            <button className="update-install" onClick={() => window.cobblestar?.installUpdate()}>
+              Version {updateStatus.version} prête — Redémarrer et installer
+            </button>
+          ) : launchState === 'checking' ? (
             <><div className="progress"><i style={{ width: `${progress}%` }} /></div><span>Vérification des fichiers… {progress}%</span></>
           ) : (
-            <><UsersRound size={17} /><span>{launchState === 'ready' ? 'Installation vérifiée — prêt à jouer' : 'Modpack CobbleStar • mise à jour automatique'}</span></>
+            <><UsersRound size={17} /><span>{updateStatus?.state === 'available' ? `Nouvelle version ${updateStatus.version} détectée…` : launchState === 'ready' ? 'Installation vérifiée — prêt à jouer' : 'Modpack CobbleStar • mise à jour automatique'}</span></>
           )}
         </div>
         <button className="play-button" onClick={checkInstallation} disabled={launchState === 'checking'}>

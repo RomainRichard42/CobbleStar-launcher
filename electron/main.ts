@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getMinecraftAccount, loginMicrosoft, logoutMicrosoft } from './auth.js'
+import { installDownloadedUpdate, setupAutoUpdater } from './updater.js'
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const isDev = !app.isPackaged
@@ -36,6 +37,9 @@ function createWindow() {
 
   if (isDev) window.loadURL('http://127.0.0.1:5173')
   else window.loadFile(path.join(currentDir, '../dist/index.html'))
+
+  if (!isDev) setupAutoUpdater(window)
+  return window
 }
 
 app.whenReady().then(() => {
@@ -51,6 +55,7 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('auth:logout', () => logoutMicrosoft())
   ipcMain.handle('auth:account', () => getMinecraftAccount())
+  ipcMain.on('update:install', () => installDownloadedUpdate())
 
   createWindow()
   app.on('activate', () => BrowserWindow.getAllWindows().length === 0 && createWindow())
