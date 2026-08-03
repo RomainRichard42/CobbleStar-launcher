@@ -15,10 +15,16 @@ function createElectronNetworkClient(): INetworkModule {
     const headers: Record<string, string> = { ...(options?.headers ?? {}) }
     let body: string | undefined
 
-    if (method === 'POST') {
+   if (method === 'POST') {
       headers['content-type'] = headers['content-type'] ?? 'application/x-www-form-urlencoded'
       const data = options?.body
-      body = typeof data === 'string' ? data : new URLSearchParams(data as Record<string, string>).toString()
+      if (typeof data === 'string') {
+        body = data
+      } else if (data && typeof data === 'object') {
+        body = new URLSearchParams(data as unknown as Record<string, string>).toString()
+      } else {
+        body = ''
+      }
     }
 
     const response = await net.fetch(url, { method, headers, body })
