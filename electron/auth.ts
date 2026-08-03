@@ -1,5 +1,49 @@
 import { PublicClientApplication } from '@azure/msal-node'
+import type { INetworkModule, NetworkRequestOptions, NetworkResponse } from '@azure/msal-node'
 import { BrowserWindow, net, shell } from 'electron'
+
+// MSAL's default HTTP client relies on une option Undici `throwOnError`
+// incompatible avec le runtime Node/Electron des builds packagés
+// (plante avec "invalid throwOnError"). On fait passer les requêtes de MSAL
+// par net.fetch d'Electron, comme le fait déjà postJson plus bas.
+function createElectronNetworkClient(): INetworkModule {
+  async function sendRequest<T>(
+    url: string,
+    method: 'GET' | 'POST',
+    options?: NetworkRequestOptions,
+  ): Promise<NetworkResponse<T>> {
+    const headers: Record<string, string> = { ...(options?.headers ?? {}) }
+    let body: string | undefined
+
+    if (method === 'POST') {
+      headers['content-type'] = headers['content-type'] ?? 'application/x-www-form-urlencoded'
+      const data = options?.body
+      body = typeof data === 'string' ? data : new URLSearchParams(data as Record<string, string>).toString()
+    }
+
+    const response = await net.fetch(url, { method, headers, body })
+    const text = await response.text()
+
+    let parsedBody: T
+    try {
+      parsedBody = JSON.parse(text) as T
+    } catch {
+      parsedBody = text as unknown as T
+    }
+
+    const responseHeaders: Record<string, string> = {}
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value
+    })
+
+    return { headers: responseHeaders, body: parsedBody, status: response.status }
+  }
+
+  return {
+    sendGetRequestAsync: (url, options) => sendRequest(url, 'GET', options),
+    sendPostRequestAsync: (url, options) => sendRequest(url, 'POST', options),
+  }
+}
 
 export type MinecraftAccount = {
   id: string
@@ -46,6 +90,9 @@ export async function loginMicrosoft(window: BrowserWindow, clientId: string) {
       auth: {
         clientId,
         authority: 'https://login.microsoftonline.com/consumers',
+      }, 
+       system: {
+        networkClient: createElectronNetworkClient(),
       },
     })
 
