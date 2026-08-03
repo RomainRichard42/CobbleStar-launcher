@@ -36,7 +36,7 @@ GitHub Actions construit d’abord l’ensemble des fichiers, vérifie leur pré
 
 Les informations principales sont regroupées dans `src/config.ts` :
 
-- serveur : `play.cobblestar-mc.fr` (port SRV `25574`) ;
+- serveur : `play.cobblestar-mc.fr:25574` ;
 - Minecraft : `1.21.1` ;
 - loader : `Fabric` ;
 - endpoints du site, des actualités et du manifeste du modpack ;
@@ -54,24 +54,17 @@ La connexion utilise le flux officiel Microsoft avec code d’appareil : le joue
 
 L’identifiant client n’est pas un secret. Ne crée et n’ajoute aucun secret client au launcher.
 
-## État de cette version
+## Jeu et modpack
 
-Cette version fournit l’interface complète, la fermeture/réduction de fenêtre, la connexion Microsoft, l’installation contrôlée du `.mrpack`, Java 21, Minecraft/Fabric et la connexion directe au serveur.
+Le bouton Jouer télécharge automatiquement Java 21, Minecraft 1.21.1 et Fabric dans le dossier utilisateur de l’application, puis connecte le joueur au serveur. La RAM choisie est conservée dans `settings.json` sous le dossier `userData` d’Electron et survit aux mises à jour.
 
-## Publier le modpack
+Pour distribuer le `.mrpack`, renseigne dans `launcher.config.json` une URL HTTPS téléchargeable directement :
 
-Le fichier attendu est configuré dans `launcher.config.json`. Pour la version 1.0.0 :
+```json
+"modpackUrl": "https://exemple.fr/CobbleStar-1.0.0.mrpack",
+"modpackVersion": "1.0.0"
+```
 
-1. publie normalement le launcher avec le tag `v0.4.0` ;
-2. ouvre la Release `v0.4.0` créée automatiquement dans `RomainRichard42/CobbleStar-launcher` ;
-3. modifie cette Release et ajoute l’asset sous le nom exact `CobbleStar-1.0.0.mrpack`.
-
-Lors d’une future mise à jour, modifie `version`, `url` et `sha512` dans `launcher.config.json`. Le launcher conserve les fichiers déjà valides et ne télécharge que ceux qui ont changé.
-
-Les prochaines intégrations sont :
-
-1. conservation chiffrée de la session Microsoft entre deux ouvertures ;
-2. récupération des actualités depuis le site ;
-3. écran de diagnostic et réparation avancée.
+Change `modpackVersion` à chaque mise à jour du pack pour forcer sa resynchronisation chez les joueurs.
 
 Ne placez jamais de secret Microsoft dans le code du renderer. L’authentification et le lancement doivent rester dans le processus principal Electron.

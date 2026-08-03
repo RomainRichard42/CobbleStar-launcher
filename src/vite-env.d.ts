@@ -11,14 +11,16 @@ interface Window {
     >
     logoutMicrosoft(): Promise<{ ok: true }>
     getAccount(): Promise<{ id: string; name: string; skinUrl?: string } | null>
-    launchGame(memoryMb: number): Promise<
+    getSettings(): Promise<{ memoryMb: number }>
+    saveSettings(settings: { memoryMb: number }): Promise<{ memoryMb: number }>
+    startGame(): Promise<
       | { ok: true }
-      | { ok: false; code: string; message: string }
+      | { ok: false; code?: string; message: string }
     >
     onDeviceCode(callback: (payload: { userCode: string; verificationUri: string; message: string }) => void): () => void
     installUpdate(): void
     onUpdateStatus(callback: (payload: UpdateStatus) => void): () => void
-    onGameProgress(callback: (payload: GameProgress) => void): () => void
+    onGameStatus(callback: (payload: GameStatus) => void): () => void
     platform: string
   }
 }
@@ -31,8 +33,9 @@ type UpdateStatus =
   | { state: 'current'; version: string }
   | { state: 'error'; message: string }
 
-type GameProgress = {
-  state: 'checking' | 'downloading-pack' | 'downloading-files' | 'extracting' | 'installing-minecraft' | 'installing-java' | 'launching' | 'running' | 'ready' | 'error'
-  percent: number
-  message: string
+type GameStatus = {
+  state: 'preparing' | 'running' | 'stopped' | 'error'
+  phase: string
+  progress?: number
+  message?: string
 }

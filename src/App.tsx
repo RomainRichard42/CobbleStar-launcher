@@ -16,7 +16,7 @@ import { launcherConfig } from './config'
 import { fallbackNews } from './data/news'
 import logo from './assets/cobblestar-logo.png'
 
-type LaunchState = 'idle' | 'preparing' | 'ready' | 'running' | 'error'
+type LaunchState = 'idle' | 'checking' | 'ready' | 'running'
 type MinecraftAccount = { id: string; name: string; skinUrl?: string }
 type AuthDialog =
   | { mode: 'device'; userCode: string; verificationUri: string; message: string }
@@ -33,7 +33,7 @@ type UpdateStatus =
 export function App() {
   const [launchState, setLaunchState] = useState<LaunchState>('idle')
   const [progress, setProgress] = useState(0)
-  const [gameMessage, setGameMessage] = useState('Modpack CobbleStar • mise à jour automatique')
+  const [gamePhase, setGamePhase] = useState('Préparation du jeu…')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [memory, setMemory] = useState<number>(launcherConfig.defaults.memoryMb)
   const [copied, setCopied] = useState(false)
@@ -44,17 +44,21 @@ export function App() {
 
   useEffect(() => {
     void window.cobblestar?.getAccount().then(setAccount)
+    void window.cobblestar?.getSettings().then((settings) => setMemory(settings.memoryMb))
     const removeDeviceCodeListener = window.cobblestar?.onDeviceCode((payload) => {
       setAuthDialog({ mode: 'device', ...payload })
     })
     const removeUpdateListener = window.cobblestar?.onUpdateStatus(setUpdateStatus)
-    const removeGameListener = window.cobblestar?.onGameProgress((payload) => {
-      setProgress(payload.percent)
-      setGameMessage(payload.message)
-      if (payload.state === 'ready') setLaunchState('ready')
-      else if (payload.state === 'running') setLaunchState('running')
-      else if (payload.state === 'error') setLaunchState('error')
-      else setLaunchState('preparing')
+    const removeGameListener = window.cobblestar?.onGameStatus((status) => {
+      setGamePhase(status.phase)
+      if (typeof status.progress === 'number') setProgress(status.progress)
+      if (status.state === 'preparing') setLaunchState('checking')
+      if (status.state === 'running') setLaunchState('running')
+      if (status.state === 'stopped') setLaunchState('ready')
+      if (status.state === 'error') {
+        setLaunchState('idle')
+        setAuthDialog({ mode: 'error', message: status.message ?? status.phase })
+      }
     })
     return () => {
       removeDeviceCodeListener?.()
@@ -64,23 +68,21 @@ export function App() {
   }, [])
 
   const checkInstallation = async () => {
-    if (launchState === 'preparing' || launchState === 'running') return
+    if (launchState === 'checking' || launchState === 'running') return
+    if (!window.cobblestar) {
+      setAuthDialog({ mode: 'error', message: 'Le jeu peut uniquement être lancé depuis l’application CobbleStar.' })
+      return
+    }
     setProgress(0)
-    setGameMessage('Préparation de CobbleStar…')
-    setLaunchState('preparing')
-    const result = await window.cobblestar?.launchGame(memory)
-    if (result && !result.ok) {
-      if (result.code === 'auth_required') {
-        setLaunchState('ready')
-        setAuthDialog({ mode: 'error', message: result.message })
-      } else {
-        setLaunchState('error')
-        setGameMessage(result.message)
-      }
+    setLaunchState('checking')
+    const result = await window.cobblestar.startGame()
+    if (!result.ok) {
+      setLaunchState('idle')
+      setAuthDialog({ mode: 'error', message: result.message })
     }
   }
 
-  const serverAddress = launcherConfig.server.host
+  const serverAddress = `${launcherConfig.server.host}:${launcherConfig.server.port}`
 
   const handleAccount = async () => {
     if (!window.cobblestar) {
@@ -199,15 +201,15 @@ export function App() {
             <button className="update-install" onClick={() => window.cobblestar?.installUpdate()}>
               Version {updateStatus.version} prête — Redémarrer et installer
             </button>
-          ) : launchState === 'preparing' ? (
-            <><div className="progress"><i style={{ width: `${progress}%` }} /></div><span>{gameMessage} {progress}%</span></>
+          ) : launchState === 'checking' ? (
+            <><div className="progress"><i style={{ width: `${progress}%` }} /></div><span>{gamePhase} {progress}%</span></>
           ) : (
-            <><UsersRound size={17} /><span>{updateStatus?.state === 'available' ? `Nouvelle version ${updateStatus.version} détectée…` : gameMessage}</span></>
+            <><UsersRound size={17} /><span>{updateStatus?.state === 'available' ? `Nouvelle version ${updateStatus.version} détectée…` : launchState === 'running' ? 'Minecraft est ouvert' : launchState === 'ready' ? 'Minecraft est prêt' : 'Minecraft 1.21.1 • Fabric • connexion automatique au serveur'}</span></>
           )}
         </div>
-        <button className="play-button" onClick={checkInstallation} disabled={launchState === 'preparing' || launchState === 'running'}>
+        <button className="play-button" onClick={checkInstallation} disabled={launchState === 'checking' || launchState === 'running'}>
           <span className="play-icon"><Play size={22} fill="currentColor" /></span>
-          <span><small>{launchState === 'ready' ? 'PRÊT À PARTIR' : launchState === 'running' ? 'EN COURS' : 'LANCER LE JEU'}</small><strong>{launchState === 'preparing' ? 'PRÉPARATION…' : launchState === 'running' ? 'LANCÉ' : 'JOUER'}</strong></span>
+          <span><small>{launchState === 'running' ? 'JEU EN COURS' : launchState === 'ready' ? 'PRÊT À REJOUER' : 'LANCER LE JEU'}</small><strong>{launchState === 'checking' ? 'PRÉPARATION…' : launchState === 'running' ? 'OUVERT' : 'JOUER'}</strong></span>
           <ChevronRight size={24} />
         </button>
       </footer>
@@ -222,7 +224,11 @@ export function App() {
             <input type="range" min="2048" max="12288" step="1024" value={memory} onChange={(e) => setMemory(Number(e.target.value))} />
             <strong className="memory-value">{memory / 1024} Go</strong>
             <div className="setting-note">Java automatique • Dossier de jeu isolé • Fabric {launcherConfig.minecraftVersion}</div>
-            <button className="save-settings" onClick={() => setSettingsOpen(false)}>Enregistrer</button>
+            <button className="save-settings" onClick={async () => {
+              const saved = await window.cobblestar?.saveSettings({ memoryMb: memory })
+              if (saved) setMemory(saved.memoryMb)
+              setSettingsOpen(false)
+            }}>Enregistrer</button>
           </section>
         </div>
       )}

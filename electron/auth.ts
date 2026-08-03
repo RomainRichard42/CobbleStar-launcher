@@ -1,6 +1,5 @@
 import { PublicClientApplication } from '@azure/msal-node'
-import { MicrosoftAuthenticator } from '@xmcl/user/dist/index.mjs'
-import { BrowserWindow, shell } from 'electron'
+import { BrowserWindow, net, shell } from 'electron'
 
 export type MinecraftAccount = {
   id: string
@@ -12,6 +11,22 @@ type MinecraftProfileResponse = {
   id: string
   name: string
   skins?: Array<{ url: string; state?: string }>
+}
+
+type XboxResponse = {
+  Token: string
+  DisplayClaims: { xui: Array<{ uhs: string }> }
+}
+
+async function postJson<T>(url: string, body: object): Promise<T> {
+  const response = await net.fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const text = await response.text()
+  if (!response.ok) throw new Error(`Service Microsoft indisponible (${response.status}) : ${text}`)
+  return JSON.parse(text) as T
 }
 
 let currentAccount: MinecraftAccount | null = null
@@ -57,12 +72,30 @@ export async function loginMicrosoft(window: BrowserWindow, clientId: string) {
 
     if (!microsoftResult?.accessToken) throw new Error('Microsoft n’a retourné aucun jeton de connexion.')
 
-    const authenticator = new MicrosoftAuthenticator()
-    const { minecraftXstsResponse } = await authenticator.acquireXBoxToken(microsoftResult.accessToken)
+    // These calls deliberately use Electron's network stack. This avoids the
+    // incompatible Undici `throwOnError` option that affected packaged builds.
+    const xboxLive = await postJson<XboxResponse>('https://user.auth.xboxlive.com/user/authenticate', {
+      Properties: {
+        AuthMethod: 'RPS',
+        SiteName: 'user.auth.xboxlive.com',
+        RpsTicket: `d=${microsoftResult.accessToken}`,
+      },
+      RelyingParty: 'http://auth.xboxlive.com',
+      TokenType: 'JWT',
+    })
+    const minecraftXstsResponse = await postJson<XboxResponse>('https://xsts.auth.xboxlive.com/xsts/authorize', {
+      Properties: { SandboxId: 'RETAIL', UserTokens: [xboxLive.Token] },
+      RelyingParty: 'rp://api.minecraftservices.com/',
+      TokenType: 'JWT',
+    })
     const claim = minecraftXstsResponse.DisplayClaims.xui[0]
-    const minecraftResult = await authenticator.loginMinecraftWithXBox(claim.uhs, minecraftXstsResponse.Token)
+    if (!claim) throw new Error('Microsoft n’a retourné aucun profil Xbox.')
+    const minecraftResult = await postJson<{ access_token: string }>(
+      'https://api.minecraftservices.com/authentication/login_with_xbox',
+      { identityToken: `XBL3.0 x=${claim.uhs};${minecraftXstsResponse.Token}` },
+    )
 
-    const profileResponse = await fetch('https://api.minecraftservices.com/minecraft/profile', {
+    const profileResponse = await net.fetch('https://api.minecraftservices.com/minecraft/profile', {
       headers: { Authorization: `Bearer ${minecraftResult.access_token}` },
     })
 

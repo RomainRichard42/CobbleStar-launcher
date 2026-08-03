@@ -2,25 +2,41 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { getMinecraftAccessToken, getMinecraftAccount, loginMicrosoft, logoutMicrosoft } from './auth.js'
-import { installAndLaunch, type GameConfig } from './game.js'
+import { getMinecraftAccount, loginMicrosoft, logoutMicrosoft } from './auth.js'
+import { startGame, type GameConfig } from './game.js'
+import { getSettings, saveSettings } from './settings.js'
 import { installDownloadedUpdate, setupAutoUpdater } from './updater.js'
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const isDev = !app.isPackaged
 
-type LauncherConfig = GameConfig & { microsoftClientId?: string }
+type LauncherFileConfig = {
+  microsoftClientId?: string
+  game?: Partial<GameConfig>
+}
 
-function getLauncherConfig(): LauncherConfig {
+function getLauncherConfig(): LauncherFileConfig {
   try {
     const configPath = path.join(app.getAppPath(), 'launcher.config.json')
-    return JSON.parse(fs.readFileSync(configPath, 'utf8')) as LauncherConfig
+    return JSON.parse(fs.readFileSync(configPath, 'utf8')) as LauncherFileConfig
   } catch {
-    return {
-      microsoftClientId: '',
-      server: { host: 'play.cobblestar-mc.fr', port: 25574 },
-      modpack: { version: '', url: '', sha512: '' },
-    }
+    return {}
+  }
+}
+
+function getMicrosoftClientId() {
+  return getLauncherConfig().microsoftClientId?.trim() ?? ''
+}
+
+function getGameConfig(): GameConfig {
+  const configured = getLauncherConfig().game
+  return {
+    minecraftVersion: configured?.minecraftVersion?.trim() || '1.21.1',
+    fabricLoaderVersion: configured?.fabricLoaderVersion?.trim() || undefined,
+    serverHost: configured?.serverHost?.trim() || 'play.cobblestar-mc.fr',
+    serverPort: Number.isInteger(configured?.serverPort) ? Number(configured?.serverPort) : 25574,
+    modpackUrl: configured?.modpackUrl?.trim() || undefined,
+    modpackVersion: configured?.modpackVersion?.trim() || undefined,
   }
 }
 
@@ -57,18 +73,16 @@ app.whenReady().then(() => {
   ipcMain.handle('auth:login', async (event) => {
     const window = BrowserWindow.fromWebContents(event.sender)
     if (!window) return { ok: false, code: 'window_missing', message: 'Fenêtre du launcher introuvable.' }
-    return loginMicrosoft(window, getLauncherConfig().microsoftClientId?.trim() ?? '')
+    return loginMicrosoft(window, getMicrosoftClientId())
   })
   ipcMain.handle('auth:logout', () => logoutMicrosoft())
   ipcMain.handle('auth:account', () => getMinecraftAccount())
-  ipcMain.handle('game:launch', async (event, memoryMb: number) => {
+  ipcMain.handle('settings:get', () => getSettings())
+  ipcMain.handle('settings:save', (_event, settings: { memoryMb?: number }) => saveSettings(settings))
+  ipcMain.handle('game:start', async (event) => {
     const window = BrowserWindow.fromWebContents(event.sender)
     if (!window) return { ok: false, code: 'window_missing', message: 'Fenêtre du launcher introuvable.' }
-    return installAndLaunch(window, getLauncherConfig(), {
-      account: getMinecraftAccount(),
-      accessToken: getMinecraftAccessToken(),
-      memoryMb,
-    })
+    return startGame(window, getSettings(), getGameConfig())
   })
   ipcMain.on('update:install', () => installDownloadedUpdate())
 

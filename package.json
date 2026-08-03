@@ -17,12 +17,11 @@
   "dependencies": {
     "@azure/msal-node": "^5.4.3",
     "@vitejs/plugin-react": "latest",
-    "@xmcl/core": "2.15.1",
-    "@xmcl/installer": "6.1.2",
-    "@xmcl/user": "^4.4.1",
+    "@xmcl/core": "^2.13.0",
+    "@xmcl/installer": "^5.4.0",
+    "@xmcl/unzip": "^2.1.2",
     "electron-updater": "^6.8.9",
     "lucide-react": "latest",
-    "node-stream-zip": "1.15.0",
     "react": "latest",
     "react-dom": "latest"
   },
@@ -36,9 +35,6 @@
     "typescript": "latest",
     "vite": "latest",
     "wait-on": "latest"
-  },
-  "overrides": {
-    "undici": "7.24.0"
   },
   "build": {
     "appId": "fr.cobblestar.launcher",

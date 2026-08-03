@@ -7,7 +7,9 @@ contextBridge.exposeInMainWorld('cobblestar', {
   loginMicrosoft: () => ipcRenderer.invoke('auth:login'),
   logoutMicrosoft: () => ipcRenderer.invoke('auth:logout'),
   getAccount: () => ipcRenderer.invoke('auth:account'),
-  launchGame: (memoryMb: number) => ipcRenderer.invoke('game:launch', memoryMb),
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  saveSettings: (settings: { memoryMb: number }) => ipcRenderer.invoke('settings:save', settings),
+  startGame: () => ipcRenderer.invoke('game:start'),
   installUpdate: () => ipcRenderer.send('update:install'),
   onDeviceCode: (callback: (payload: unknown) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, payload: unknown) => callback(payload)
@@ -19,10 +21,10 @@ contextBridge.exposeInMainWorld('cobblestar', {
     ipcRenderer.on('update:status', listener)
     return () => ipcRenderer.removeListener('update:status', listener)
   },
-  onGameProgress: (callback: (payload: unknown) => void) => {
+  onGameStatus: (callback: (payload: unknown) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, payload: unknown) => callback(payload)
-    ipcRenderer.on('game:progress', listener)
-    return () => ipcRenderer.removeListener('game:progress', listener)
+    ipcRenderer.on('game:status', listener)
+    return () => ipcRenderer.removeListener('game:status', listener)
   },
   platform: process.platform,
 })
