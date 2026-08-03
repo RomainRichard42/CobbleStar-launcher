@@ -2,8 +2,9 @@ export const launcherConfig = {
   name: 'CobbleStar',
   minecraftVersion: '1.21.1',
   loader: 'Fabric',
+  modpackVersion: '1.0.0',
   server: {
-    host: '23.109.138.130',
+    host: 'play.cobblestar-mc.fr',
     port: 25574,
   },
   endpoints: {

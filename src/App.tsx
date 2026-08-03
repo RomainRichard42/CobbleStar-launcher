@@ -16,7 +16,7 @@ import { launcherConfig } from './config'
 import { fallbackNews } from './data/news'
 import logo from './assets/cobblestar-logo.png'
 
-type LaunchState = 'idle' | 'checking' | 'ready'
+type LaunchState = 'idle' | 'preparing' | 'ready' | 'running' | 'error'
 type MinecraftAccount = { id: string; name: string; skinUrl?: string }
 type AuthDialog =
   | { mode: 'device'; userCode: string; verificationUri: string; message: string }
@@ -33,6 +33,7 @@ type UpdateStatus =
 export function App() {
   const [launchState, setLaunchState] = useState<LaunchState>('idle')
   const [progress, setProgress] = useState(0)
+  const [gameMessage, setGameMessage] = useState('Modpack CobbleStar • mise à jour automatique')
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [memory, setMemory] = useState<number>(launcherConfig.defaults.memoryMb)
   const [copied, setCopied] = useState(false)
@@ -47,34 +48,39 @@ export function App() {
       setAuthDialog({ mode: 'device', ...payload })
     })
     const removeUpdateListener = window.cobblestar?.onUpdateStatus(setUpdateStatus)
+    const removeGameListener = window.cobblestar?.onGameProgress((payload) => {
+      setProgress(payload.percent)
+      setGameMessage(payload.message)
+      if (payload.state === 'ready') setLaunchState('ready')
+      else if (payload.state === 'running') setLaunchState('running')
+      else if (payload.state === 'error') setLaunchState('error')
+      else setLaunchState('preparing')
+    })
     return () => {
       removeDeviceCodeListener?.()
       removeUpdateListener?.()
+      removeGameListener?.()
     }
   }, [])
 
-  useEffect(() => {
-    if (launchState !== 'checking') return
-    const timer = window.setInterval(() => {
-      setProgress((value) => {
-        const next = Math.min(value + 4, 100)
-        if (next === 100) {
-          window.clearInterval(timer)
-          window.setTimeout(() => setLaunchState('ready'), 250)
-        }
-        return next
-      })
-    }, 35)
-    return () => window.clearInterval(timer)
-  }, [launchState])
-
-  const checkInstallation = () => {
-    if (launchState === 'checking') return
+  const checkInstallation = async () => {
+    if (launchState === 'preparing' || launchState === 'running') return
     setProgress(0)
-    setLaunchState('checking')
+    setGameMessage('Préparation de CobbleStar…')
+    setLaunchState('preparing')
+    const result = await window.cobblestar?.launchGame(memory)
+    if (result && !result.ok) {
+      if (result.code === 'auth_required') {
+        setLaunchState('ready')
+        setAuthDialog({ mode: 'error', message: result.message })
+      } else {
+        setLaunchState('error')
+        setGameMessage(result.message)
+      }
+    }
   }
 
-  const serverAddress = `${launcherConfig.server.host}:${launcherConfig.server.port}`
+  const serverAddress = launcherConfig.server.host
 
   const handleAccount = async () => {
     if (!window.cobblestar) {
@@ -193,15 +199,15 @@ export function App() {
             <button className="update-install" onClick={() => window.cobblestar?.installUpdate()}>
               Version {updateStatus.version} prête — Redémarrer et installer
             </button>
-          ) : launchState === 'checking' ? (
-            <><div className="progress"><i style={{ width: `${progress}%` }} /></div><span>Vérification des fichiers… {progress}%</span></>
+          ) : launchState === 'preparing' ? (
+            <><div className="progress"><i style={{ width: `${progress}%` }} /></div><span>{gameMessage} {progress}%</span></>
           ) : (
-            <><UsersRound size={17} /><span>{updateStatus?.state === 'available' ? `Nouvelle version ${updateStatus.version} détectée…` : launchState === 'ready' ? 'Installation vérifiée — prêt à jouer' : 'Modpack CobbleStar • mise à jour automatique'}</span></>
+            <><UsersRound size={17} /><span>{updateStatus?.state === 'available' ? `Nouvelle version ${updateStatus.version} détectée…` : gameMessage}</span></>
           )}
         </div>
-        <button className="play-button" onClick={checkInstallation} disabled={launchState === 'checking'}>
+        <button className="play-button" onClick={checkInstallation} disabled={launchState === 'preparing' || launchState === 'running'}>
           <span className="play-icon"><Play size={22} fill="currentColor" /></span>
-          <span><small>{launchState === 'ready' ? 'PRÊT À PARTIR' : 'LANCER LE JEU'}</small><strong>{launchState === 'checking' ? 'PRÉPARATION…' : 'JOUER'}</strong></span>
+          <span><small>{launchState === 'ready' ? 'PRÊT À PARTIR' : launchState === 'running' ? 'EN COURS' : 'LANCER LE JEU'}</small><strong>{launchState === 'preparing' ? 'PRÉPARATION…' : launchState === 'running' ? 'LANCÉ' : 'JOUER'}</strong></span>
           <ChevronRight size={24} />
         </button>
       </footer>

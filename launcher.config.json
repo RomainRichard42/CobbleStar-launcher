@@ -1,3 +1,12 @@
 {
-  "microsoftClientId": "a681a9e7-8d27-413a-8606-42fe1ca32c8b"
+  "microsoftClientId": "a681a9e7-8d27-413a-8606-42fe1ca32c8b",
+  "server": {
+    "host": "play.cobblestar-mc.fr",
+    "port": 25574
+  },
+  "modpack": {
+    "version": "1.0.0",
+    "url": "https://github.com/RomainRichard42/CobbleStar-launcher/releases/download/v0.4.0/CobbleStar-1.0.0.mrpack",
+    "sha512": "1e86422a21b632700935c49f699a6489c7b45a6e9e47e2ae64d9a284e14089d1f3b0b667824126a22579397aa67c713f12a868c760d88d383cc651f7156c6c2e"
+  }
 }

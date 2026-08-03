@@ -26,8 +26,8 @@ Le launcher vérifie les Releases publiques du dépôt `RomainRichard42/CobbleSt
 3. crée puis pousse un tag identique à la version :
 
 ```bash
-git tag v0.3.3
-git push origin v0.3.3
+git tag v0.4.0
+git push origin v0.4.0
 ```
 
 GitHub Actions construit d’abord l’ensemble des fichiers, vérifie leur présence, puis les publie en une seule opération avec la commande officielle GitHub. La Release contient `latest.yml`, l’installateur et son fichier de mise à jour différentielle. Les launchers déjà installés la détectent au prochain démarrage.
@@ -36,7 +36,7 @@ GitHub Actions construit d’abord l’ensemble des fichiers, vérifie leur pré
 
 Les informations principales sont regroupées dans `src/config.ts` :
 
-- serveur : `23.109.138.130:25574` ;
+- serveur : `play.cobblestar-mc.fr` (port SRV `25574`) ;
 - Minecraft : `1.21.1` ;
 - loader : `Fabric` ;
 - endpoints du site, des actualités et du manifeste du modpack ;
@@ -56,12 +56,22 @@ L’identifiant client n’est pas un secret. Ne crée et n’ajoute aucun secre
 
 ## État de cette version
 
-Cette version fournit l’interface complète, la fermeture/réduction de fenêtre et la connexion Microsoft vers un profil Minecraft Java. Le bouton Jouer simule encore la vérification des fichiers. Les prochaines intégrations sont :
+Cette version fournit l’interface complète, la fermeture/réduction de fenêtre, la connexion Microsoft, l’installation contrôlée du `.mrpack`, Java 21, Minecraft/Fabric et la connexion directe au serveur.
+
+## Publier le modpack
+
+Le fichier attendu est configuré dans `launcher.config.json`. Pour la version 1.0.0 :
+
+1. publie normalement le launcher avec le tag `v0.4.0` ;
+2. ouvre la Release `v0.4.0` créée automatiquement dans `RomainRichard42/CobbleStar-launcher` ;
+3. modifie cette Release et ajoute l’asset sous le nom exact `CobbleStar-1.0.0.mrpack`.
+
+Lors d’une future mise à jour, modifie `version`, `url` et `sha512` dans `launcher.config.json`. Le launcher conserve les fichiers déjà valides et ne télécharge que ceux qui ont changé.
+
+Les prochaines intégrations sont :
 
 1. conservation chiffrée de la session Microsoft entre deux ouvertures ;
-2. téléchargement de Java, Minecraft et Fabric ;
-3. synchronisation du modpack à partir d’un manifeste distant ;
-4. lancement et connexion directe au serveur ;
-5. récupération des actualités depuis le futur site.
+2. récupération des actualités depuis le site ;
+3. écran de diagnostic et réparation avancée.
 
 Ne placez jamais de secret Microsoft dans le code du renderer. L’authentification et le lancement doivent rester dans le processus principal Electron.

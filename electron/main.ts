@@ -2,19 +2,25 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { getMinecraftAccount, loginMicrosoft, logoutMicrosoft } from './auth.js'
+import { getMinecraftAccessToken, getMinecraftAccount, loginMicrosoft, logoutMicrosoft } from './auth.js'
+import { installAndLaunch, type GameConfig } from './game.js'
 import { installDownloadedUpdate, setupAutoUpdater } from './updater.js'
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
 const isDev = !app.isPackaged
 
-function getMicrosoftClientId() {
+type LauncherConfig = GameConfig & { microsoftClientId?: string }
+
+function getLauncherConfig(): LauncherConfig {
   try {
     const configPath = path.join(app.getAppPath(), 'launcher.config.json')
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as { microsoftClientId?: string }
-    return config.microsoftClientId?.trim() ?? ''
+    return JSON.parse(fs.readFileSync(configPath, 'utf8')) as LauncherConfig
   } catch {
-    return ''
+    return {
+      microsoftClientId: '',
+      server: { host: 'play.cobblestar-mc.fr', port: 25574 },
+      modpack: { version: '', url: '', sha512: '' },
+    }
   }
 }
 
@@ -51,10 +57,19 @@ app.whenReady().then(() => {
   ipcMain.handle('auth:login', async (event) => {
     const window = BrowserWindow.fromWebContents(event.sender)
     if (!window) return { ok: false, code: 'window_missing', message: 'Fenêtre du launcher introuvable.' }
-    return loginMicrosoft(window, getMicrosoftClientId())
+    return loginMicrosoft(window, getLauncherConfig().microsoftClientId?.trim() ?? '')
   })
   ipcMain.handle('auth:logout', () => logoutMicrosoft())
   ipcMain.handle('auth:account', () => getMinecraftAccount())
+  ipcMain.handle('game:launch', async (event, memoryMb: number) => {
+    const window = BrowserWindow.fromWebContents(event.sender)
+    if (!window) return { ok: false, code: 'window_missing', message: 'Fenêtre du launcher introuvable.' }
+    return installAndLaunch(window, getLauncherConfig(), {
+      account: getMinecraftAccount(),
+      accessToken: getMinecraftAccessToken(),
+      memoryMb,
+    })
+  })
   ipcMain.on('update:install', () => installDownloadedUpdate())
 
   createWindow()
