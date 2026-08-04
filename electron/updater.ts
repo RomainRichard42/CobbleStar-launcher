@@ -45,5 +45,9 @@ export function setupAutoUpdater(window: BrowserWindow) {
 }
 
 export function installDownloadedUpdate() {
-  autoUpdater.quitAndInstall(false, true)
+  // isSilent = true : sans ça, NSIS affiche sa propre fenêtre d'installation
+  // pendant que celle du launcher reste à l'écran sans repeindre — Windows la
+  // marque alors « ne répond pas ». En silencieux, la fenêtre se ferme
+  // immédiatement et l'utilisateur ne voit jamais d'application figée.
+  autoUpdater.quitAndInstall(true, true)
 }

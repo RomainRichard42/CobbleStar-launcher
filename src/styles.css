@@ -90,10 +90,31 @@ button { color: inherit; font: inherit; }
 .orb-two { width: 6px; height: 6px; background: var(--cyan); left: 6%; bottom: 30%; box-shadow: 0 0 15px 4px rgba(124,230,238,.35); }
 @keyframes float { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-10px) rotate(1deg); } }
 
+/* Écran de chargement : au démarrage, et pendant l'installation d'une mise à
+   jour (là où Windows affichait « ne répond pas »). `app-region: drag` garde
+   la fenêtre déplaçable même quand l'overlay couvre la barre de titre. */
+.boot-splash { position: fixed; inset: 0; z-index: 40; display: grid; place-content: center; justify-items: center; gap: 17px; background: linear-gradient(128deg, #130d35 0%, #0e0928 53%, #171040 100%); -webkit-app-region: drag; animation: boot-in .25s ease-out; }
+.boot-splash.boot-splash-update { background: rgba(14,9,40,.93); backdrop-filter: blur(18px); }
+.boot-splash img { width: 132px; height: 132px; object-fit: contain; animation: float 3s ease-in-out infinite; filter: drop-shadow(0 18px 34px rgba(0,0,0,.42)); }
+.boot-halo { position: absolute; width: 260px; height: 260px; top: calc(50% - 175px); border-radius: 50%; background: radial-gradient(circle, rgba(124,230,238,.2), rgba(244,155,195,.06) 55%, transparent 72%); filter: blur(8px); animation: boot-pulse 2.6s ease-in-out infinite; }
+.boot-splash small { font-size: 8px; font-weight: 900; letter-spacing: .19em; color: #8e86a8; }
+/* Barre indéterminée : on ne connaît pas la durée, la navette dit juste
+   « ça travaille » sans mentir sur une progression. */
+.boot-bar { width: 168px; height: 3px; border-radius: 99px; background: rgba(255,255,255,.08); overflow: hidden; }
+.boot-bar i { display: block; width: 42%; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--pink), var(--cyan)); box-shadow: 0 0 12px rgba(124,230,238,.45); animation: boot-slide 1.15s ease-in-out infinite; }
+@keyframes boot-slide { 0% { transform: translateX(-115%); } 100% { transform: translateX(255%); } }
+@keyframes boot-pulse { 0%, 100% { opacity: .55; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.04); } }
+@keyframes boot-in { from { opacity: 0; } to { opacity: 1; } }
+
 .glass { background: rgba(29,21,64,.62); border: 1px solid rgba(255,255,255,.105); box-shadow: 0 20px 60px rgba(0,0,0,.26); backdrop-filter: blur(24px); }
 .account-card { position: absolute; right: 5.5vw; top: 7vh; width: 242px; padding: 13px; border-radius: 15px; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; }
 .account-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; color: var(--pink); background: linear-gradient(145deg, rgba(244,155,195,.18), rgba(124,230,238,.08)); }
+/* Le canvas ne fait que 8x8 pixels : `pixelated` évite que le navigateur ne
+   le lisse en une bouillie floue en l'agrandissant. */
+.account-avatar { width: 38px; height: 38px; border-radius: 11px; image-rendering: pixelated; background: rgba(124,230,238,.08); box-shadow: 0 0 0 1px rgba(124,230,238,.22), 0 6px 16px rgba(0,0,0,.3); }
 .account-card div:nth-child(2) { display: flex; flex-direction: column; }
+.account-online { color: #7ce6ee !important; display: flex; align-items: center; gap: 5px; }
+.account-online::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #6ee7a8; box-shadow: 0 0 8px 2px rgba(110,231,168,.5); }
 .account-card strong { font-size: 12px; }
 .account-card button { grid-column: 1 / -1; height: 35px; border: 1px solid rgba(124,230,238,.22); border-radius: 9px; background: rgba(124,230,238,.08); color: var(--cyan); font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
 .account-card button:disabled { opacity: .65; cursor: wait; }
@@ -121,7 +142,12 @@ button { color: inherit; font: inherit; }
 .update-install { border: 1px solid rgba(124,230,238,.28); background: rgba(124,230,238,.1); color: var(--cyan); border-radius: 10px; padding: 10px 13px; font-size: 10px; font-weight: 900; cursor: pointer; }
 .update-install:hover { background: rgba(124,230,238,.17); }
 .progress { height: 4px; width: min(16vw, 180px); background: rgba(255,255,255,.09); border-radius: 99px; overflow: hidden; }
-.progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--pink), var(--cyan)); border-radius: 99px; box-shadow: 0 0 12px rgba(124,230,238,.4); transition: width .1s linear; }
+/* Certaines étapes (téléchargement de Java, du modpack) restent longtemps sur
+   le même pourcentage : le reflet qui balaie la barre montre que le launcher
+   travaille toujours et n'est pas figé. */
+.progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--pink), var(--cyan)); border-radius: 99px; box-shadow: 0 0 12px rgba(124,230,238,.4); transition: width .35s ease-out; position: relative; overflow: hidden; }
+.progress i::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); animation: progress-sheen 1.4s ease-in-out infinite; }
+@keyframes progress-sheen { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 .play-button { border: 0; min-width: 255px; height: 76px; border-radius: 19px; padding: 0 20px 0 12px; display: grid; grid-template-columns: auto 1fr auto; gap: 13px; align-items: center; cursor: pointer; text-align: left; background: linear-gradient(115deg, #f2a4cb, #83e3eb); color: #261540; box-shadow: 0 12px 40px rgba(124,230,238,.18), inset 0 1px rgba(255,255,255,.62); transition: transform .2s, box-shadow .2s; }
 .play-button:hover { transform: translateY(-2px); box-shadow: 0 16px 45px rgba(124,230,238,.25), inset 0 1px rgba(255,255,255,.7); }
 .play-button:disabled { cursor: wait; transform: none; }

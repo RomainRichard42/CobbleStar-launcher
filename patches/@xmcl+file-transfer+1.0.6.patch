@@ -1,0 +1,57 @@
+diff --git a/node_modules/@xmcl/file-transfer/dist/index.js b/node_modules/@xmcl/file-transfer/dist/index.js
+index 61d2f9c..4d196b2 100644
+--- a/node_modules/@xmcl/file-transfer/dist/index.js
++++ b/node_modules/@xmcl/file-transfer/dist/index.js
+@@ -183,7 +183,6 @@ async function* head(url, headers, signal, dispatcher) {
+     try {
+       const response = await (0, import_undici2.request)(url, {
+         method: "HEAD",
+-        maxRedirections: 2,
+         // @ts-ignore
+         connectTimeout: timeout,
+         headersTimeout: timeout,
+@@ -226,8 +225,6 @@ async function* range(url, segment, headers, handle, total, statusController, ab
+           ...headers,
+           Range: segment.end < 0 ? void 0 : `bytes=${segment.start}-${segment.end ?? ""}`
+         },
+-        throwOnError: true,
+-        maxRedirections: 2,
+         signal: abortSignal,
+         opaque: { fileStream }
+       }, ({ opaque: opaque2, headers: responseHeaders, statusCode }) => {
+@@ -313,11 +310,34 @@ var DefaultRangePolicy = class {
+ 
+ // agent.ts
+ var { ResponseStatusCodeError, RequestAbortedError } = import_undici3.errors;
++var defaultThrottledDispatcher;
++function getDefaultThrottledDispatcher() {
++  if (!defaultThrottledDispatcher) {
++    // maxRedirections in the constructor is honored by older undici (<=6.x)
++    // directly; on newer undici it's simply an unused/ignored option (no
++    // throw), so this is always safe to pass.
++    let dispatcher = new import_undici3.Agent({ connections: 16, maxRedirections: 2 });
++    // On undici >=7.x, redirects must instead be added via an explicit
++    // interceptor composed onto the dispatcher. Only attempt this if both
++    // the method and the namespace actually exist, and never let a mismatch
++    // here crash the whole download pipeline.
++    try {
++      if (typeof dispatcher.compose === "function" && import_undici3.interceptors && typeof import_undici3.interceptors.redirect === "function") {
++        dispatcher = dispatcher.compose(import_undici3.interceptors.redirect({ maxRedirections: 2 }));
++      } else if (typeof dispatcher.compose === "function" && typeof import_undici3.createRedirectInterceptor === "function") {
++        dispatcher = dispatcher.compose(import_undici3.createRedirectInterceptor({ maxRedirections: 2 }));
++      }
++    } catch {
++    }
++    defaultThrottledDispatcher = dispatcher;
++  }
++  return defaultThrottledDispatcher;
++}
+ function resolveAgent(agent) {
+   return agent instanceof DownloadAgent ? agent : new DownloadAgent(
+     (agent == null ? void 0 : agent.retryHandler) ?? createDefaultRetryHandler(3),
+     (agent == null ? void 0 : agent.rangePolicy) ?? new DefaultRangePolicy(2 * 1024 * 1024, 4),
+-    (agent == null ? void 0 : agent.dispatcher) ?? (0, import_undici3.getGlobalDispatcher)(),
++    (agent == null ? void 0 : agent.dispatcher) ?? getDefaultThrottledDispatcher(),
+     (agent == null ? void 0 : agent.checkpointHandler) ?? createInMemoryCheckpointHandler()
+   );
+ }

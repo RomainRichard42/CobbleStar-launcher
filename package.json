@@ -1,7 +1,7 @@
 {
   "name": "cobblestar-launcher",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Launcher officiel du serveur Minecraft CobbleStar",
   "main": "dist-electron/main.js",
   "type": "module",
@@ -12,14 +12,15 @@
     "build": "npm run build:web && npm run build:electron",
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win --x64 --publish never",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@azure/msal-node": "^5.4.3",
     "@vitejs/plugin-react": "latest",
-    "@xmcl/core": "^2.13.0",
-    "@xmcl/installer": "^5.4.0",
-    "@xmcl/unzip": "^2.1.2",
+    "@xmcl/core": "2.15.1",
+    "@xmcl/installer": "5.4.0",
+    "@xmcl/unzip": "2.1.2",
     "electron-updater": "^6.8.9",
     "lucide-react": "latest",
     "react": "latest",
@@ -32,9 +33,15 @@
     "concurrently": "latest",
     "electron": "latest",
     "electron-builder": "latest",
+    "patch-package": "^8.0.1",
     "typescript": "latest",
     "vite": "latest",
     "wait-on": "latest"
+  },
+  "overrides": {
+    "undici": "6.0.1",
+    "@xmcl/core": "2.15.1",
+    "@xmcl/unzip": "2.1.2"
   },
   "build": {
     "appId": "fr.cobblestar.launcher",
@@ -49,7 +56,8 @@
       "dist/**/*",
       "dist-electron/**/*",
       "launcher.config.json",
-      "package.json"
+      "package.json",
+      "build/icon.png"
     ],
     "directories": {
       "buildResources": "build",

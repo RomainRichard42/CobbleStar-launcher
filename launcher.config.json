@@ -4,7 +4,7 @@
     "minecraftVersion": "1.21.1",
     "serverHost": "play.cobblestar-mc.fr",
     "serverPort": 25574,
-    "modpackUrl": "https://adresse-directe/CobbleStar-1.0.0.mrpack",
+    "modpackUrl": "https://github.com/RomainRichard42/CobbleStar-launcher/releases/download/v0.4.3/CobbleStar-1.0.0.mrpack",
     "modpackVersion": "1.0.0"
   }
 }

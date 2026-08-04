@@ -1,0 +1,194 @@
+﻿diff --git a/node_modules/@xmcl/installer/dist/index.js b/node_modules/@xmcl/installer/dist/index.js
+index 12db8fd..7b69843 100644
+--- a/node_modules/@xmcl/installer/dist/index.js
++++ b/node_modules/@xmcl/installer/dist/index.js
+@@ -1155,32 +1155,32 @@ function errorToString(e) {
+ var YARN_MAVEN_URL = "https://maven.fabricmc.net/net/fabricmc/yarn/maven-metadata.xml";
+ var LOADER_MAVEN_URL = "https://maven.fabricmc.net/net/fabricmc/fabric-loader/maven-metadata.xml";
+ async function getFabricArtifacts(options) {
+-  const response = await (0, import_undici.request)("https://meta.fabricmc.net/v2/versions", { throwOnError: true, dispatcher: options == null ? void 0 : options.dispatcher });
++  const response = await (0, import_undici.request)("https://meta.fabricmc.net/v2/versions", { dispatcher: options == null ? void 0 : options.dispatcher });
+   const body = response.body.json();
+   return body;
+ }
+ async function getYarnArtifactList(options) {
+-  const response = await (0, import_undici.request)("https://meta.fabricmc.net/v2/versions/yarn", { throwOnError: true, dispatcher: options == null ? void 0 : options.dispatcher });
++  const response = await (0, import_undici.request)("https://meta.fabricmc.net/v2/versions/yarn", { dispatcher: options == null ? void 0 : options.dispatcher });
+   const body = response.body.json();
+   return body;
+ }
+ async function getYarnArtifactListFor(minecraft, options) {
+-  const response = await (0, import_undici.request)("https://meta.fabricmc.net/v2/versions/yarn/" + minecraft, { throwOnError: true, dispatcher: options == null ? void 0 : options.dispatcher });
++  const response = await (0, import_undici.request)("https://meta.fabricmc.net/v2/versions/yarn/" + minecraft, { dispatcher: options == null ? void 0 : options.dispatcher });
+   const body = response.body.json();
+   return body;
+ }
+ async function getLoaderArtifactList(options) {
+-  const response = await (0, import_undici.request)("https://meta.fabricmc.net/v2/versions/loader", { throwOnError: true, dispatcher: options == null ? void 0 : options.dispatcher });
++  const response = await (0, import_undici.request)("https://meta.fabricmc.net/v2/versions/loader", { dispatcher: options == null ? void 0 : options.dispatcher });
+   const body = response.body.json();
+   return body;
+ }
+ async function getLoaderArtifactListFor(minecraft, options) {
+-  const response = await (0, import_undici.request)("https://meta.fabricmc.net/v2/versions/loader/" + minecraft, { throwOnError: true, dispatcher: options == null ? void 0 : options.dispatcher });
++  const response = await (0, import_undici.request)("https://meta.fabricmc.net/v2/versions/loader/" + minecraft, { dispatcher: options == null ? void 0 : options.dispatcher });
+   const body = response.body.json();
+   return body;
+ }
+ async function getFabricLoaderArtifact(minecraft, loader, options) {
+-  const response = await (0, import_undici.request)("https://meta.fabricmc.net/v2/versions/loader/" + minecraft + "/" + loader, { throwOnError: true, dispatcher: options == null ? void 0 : options.dispatcher });
++  const response = await (0, import_undici.request)("https://meta.fabricmc.net/v2/versions/loader/" + minecraft + "/" + loader, { dispatcher: options == null ? void 0 : options.dispatcher });
+   const body = response.body.json();
+   return body;
+ }
+@@ -1307,7 +1307,7 @@ var MissingVersionJsonError = class extends Error {
+   }
+ };
+ async function getLiteloaderVersionList(options = {}) {
+-  const response = await (0, import_undici2.request)(DEFAULT_VERSION_MANIFEST, { dispatcher: options.dispatcher, throwOnError: true });
++  const response = await (0, import_undici2.request)(DEFAULT_VERSION_MANIFEST, { dispatcher: options.dispatcher });
+   const body = await response.body.text();
+   return LiteloaderVersionList.parse(body);
+ }
+@@ -1463,7 +1463,7 @@ var ZipValidator = class {
+ var DEFAULT_VERSION_MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+ var DEFAULT_RESOURCE_ROOT_URL = "https://resources.download.minecraft.net";
+ async function getVersionList(options = {}) {
+-  const response = await (0, import_undici3.request)(DEFAULT_VERSION_MANIFEST_URL, { dispatcher: options.dispatcher, throwOnError: true });
++  const response = await (0, import_undici3.request)(DEFAULT_VERSION_MANIFEST_URL, { dispatcher: options.dispatcher });
+   return await response.body.json();
+ }
+ function resolveDownloadUrls(original, version, option) {
+@@ -2492,7 +2492,7 @@ function installJreFromMojangTask(options) {
+   } = options;
+   return (0, import_task8.task)("installJreFromMojang", async function() {
+     const info = await this.yield((0, import_task8.task)("fetchInfo", async () => {
+-      const response = await (0, import_undici5.request)("https://launchermeta.mojang.com/mc/launcher.json", { dispatcher: options.dispatcher, throwOnError: true });
++      const response = await (0, import_undici5.request)("https://launchermeta.mojang.com/mc/launcher.json", { dispatcher: options.dispatcher });
+       return response.body.json();
+     }));
+     const system = platform2.name;
+@@ -2681,7 +2681,7 @@ function normalizeUrls(url, fileHost) {
+ async function fetchJavaRuntimeManifest(options = {}) {
+   let manifestIndex = options.manifestIndex;
+   if (!manifestIndex) {
+-    const response = await (0, import_undici6.request)(normalizeUrls(options.url ?? DEFAULT_RUNTIME_ALL_URL, options.apiHost)[0], { dispatcher: options.dispatcher, throwOnError: true });
++    const response = await (0, import_undici6.request)(normalizeUrls(options.url ?? DEFAULT_RUNTIME_ALL_URL, options.apiHost)[0], { dispatcher: options.dispatcher });
+     manifestIndex = await response.body.json();
+   }
+   const manifest = manifestIndex;
+@@ -2713,7 +2713,7 @@ async function fetchJavaRuntimeManifest(options = {}) {
+   if (targets && targets.length > 0) {
+     const target = targets[0];
+     const manifestUrl = normalizeUrls(target.manifest.url, options.apiHost)[0];
+-    const response = await (0, import_undici6.request)(manifestUrl, { dispatcher: options.dispatcher, throwOnError: true });
++    const response = await (0, import_undici6.request)(manifestUrl, { dispatcher: options.dispatcher });
+     const manifest2 = await response.body.json();
+     const result = {
+       files: manifest2.files,
+@@ -2841,7 +2841,7 @@ async function installQuiltVersion(options) {
+   return versionName;
+ }
+ async function getQuiltVersionsList(options) {
+-  const response = await (0, import_undici7.request)(`${DEFAULT_META_URL}/v3/versions/loader`, { dispatcher: options == null ? void 0 : options.dispatcher, throwOnError: true });
++  const response = await (0, import_undici7.request)(`${DEFAULT_META_URL}/v3/versions/loader`, { dispatcher: options == null ? void 0 : options.dispatcher });
+   const content = await response.body.json();
+   return content;
+ }
+diff --git a/node_modules/@xmcl/installer/dist/index.mjs b/node_modules/@xmcl/installer/dist/index.mjs
+index f2457ad..bdc7ce6 100644
+--- a/node_modules/@xmcl/installer/dist/index.mjs
++++ b/node_modules/@xmcl/installer/dist/index.mjs
+@@ -1065,32 +1065,32 @@ function errorToString(e) {
+ var YARN_MAVEN_URL = "https://maven.fabricmc.net/net/fabricmc/yarn/maven-metadata.xml";
+ var LOADER_MAVEN_URL = "https://maven.fabricmc.net/net/fabricmc/fabric-loader/maven-metadata.xml";
+ async function getFabricArtifacts(options) {
+-  const response = await request("https://meta.fabricmc.net/v2/versions", { throwOnError: true, dispatcher: options == null ? void 0 : options.dispatcher });
++  const response = await request("https://meta.fabricmc.net/v2/versions", { dispatcher: options == null ? void 0 : options.dispatcher });
+   const body = response.body.json();
+   return body;
+ }
+ async function getYarnArtifactList(options) {
+-  const response = await request("https://meta.fabricmc.net/v2/versions/yarn", { throwOnError: true, dispatcher: options == null ? void 0 : options.dispatcher });
++  const response = await request("https://meta.fabricmc.net/v2/versions/yarn", { dispatcher: options == null ? void 0 : options.dispatcher });
+   const body = response.body.json();
+   return body;
+ }
+ async function getYarnArtifactListFor(minecraft, options) {
+-  const response = await request("https://meta.fabricmc.net/v2/versions/yarn/" + minecraft, { throwOnError: true, dispatcher: options == null ? void 0 : options.dispatcher });
++  const response = await request("https://meta.fabricmc.net/v2/versions/yarn/" + minecraft, { dispatcher: options == null ? void 0 : options.dispatcher });
+   const body = response.body.json();
+   return body;
+ }
+ async function getLoaderArtifactList(options) {
+-  const response = await request("https://meta.fabricmc.net/v2/versions/loader", { throwOnError: true, dispatcher: options == null ? void 0 : options.dispatcher });
++  const response = await request("https://meta.fabricmc.net/v2/versions/loader", { dispatcher: options == null ? void 0 : options.dispatcher });
+   const body = response.body.json();
+   return body;
+ }
+ async function getLoaderArtifactListFor(minecraft, options) {
+-  const response = await request("https://meta.fabricmc.net/v2/versions/loader/" + minecraft, { throwOnError: true, dispatcher: options == null ? void 0 : options.dispatcher });
++  const response = await request("https://meta.fabricmc.net/v2/versions/loader/" + minecraft, { dispatcher: options == null ? void 0 : options.dispatcher });
+   const body = response.body.json();
+   return body;
+ }
+ async function getFabricLoaderArtifact(minecraft, loader, options) {
+-  const response = await request("https://meta.fabricmc.net/v2/versions/loader/" + minecraft + "/" + loader, { throwOnError: true, dispatcher: options == null ? void 0 : options.dispatcher });
++  const response = await request("https://meta.fabricmc.net/v2/versions/loader/" + minecraft + "/" + loader, { dispatcher: options == null ? void 0 : options.dispatcher });
+   const body = response.body.json();
+   return body;
+ }
+@@ -1217,7 +1217,7 @@ var MissingVersionJsonError = class extends Error {
+   }
+ };
+ async function getLiteloaderVersionList(options = {}) {
+-  const response = await request2(DEFAULT_VERSION_MANIFEST, { dispatcher: options.dispatcher, throwOnError: true });
++  const response = await request2(DEFAULT_VERSION_MANIFEST, { dispatcher: options.dispatcher });
+   const body = await response.body.text();
+   return LiteloaderVersionList.parse(body);
+ }
+@@ -1373,7 +1373,7 @@ var ZipValidator = class {
+ var DEFAULT_VERSION_MANIFEST_URL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+ var DEFAULT_RESOURCE_ROOT_URL = "https://resources.download.minecraft.net";
+ async function getVersionList(options = {}) {
+-  const response = await request3(DEFAULT_VERSION_MANIFEST_URL, { dispatcher: options.dispatcher, throwOnError: true });
++  const response = await request3(DEFAULT_VERSION_MANIFEST_URL, { dispatcher: options.dispatcher });
+   return await response.body.json();
+ }
+ function resolveDownloadUrls(original, version, option) {
+@@ -2402,7 +2402,7 @@ function installJreFromMojangTask(options) {
+   } = options;
+   return task7("installJreFromMojang", async function() {
+     const info = await this.yield(task7("fetchInfo", async () => {
+-      const response = await request5("https://launchermeta.mojang.com/mc/launcher.json", { dispatcher: options.dispatcher, throwOnError: true });
++      const response = await request5("https://launchermeta.mojang.com/mc/launcher.json", { dispatcher: options.dispatcher });
+       return response.body.json();
+     }));
+     const system = platform2.name;
+@@ -2591,7 +2591,7 @@ function normalizeUrls(url, fileHost) {
+ async function fetchJavaRuntimeManifest(options = {}) {
+   let manifestIndex = options.manifestIndex;
+   if (!manifestIndex) {
+-    const response = await request6(normalizeUrls(options.url ?? DEFAULT_RUNTIME_ALL_URL, options.apiHost)[0], { dispatcher: options.dispatcher, throwOnError: true });
++    const response = await request6(normalizeUrls(options.url ?? DEFAULT_RUNTIME_ALL_URL, options.apiHost)[0], { dispatcher: options.dispatcher });
+     manifestIndex = await response.body.json();
+   }
+   const manifest = manifestIndex;
+@@ -2623,7 +2623,7 @@ async function fetchJavaRuntimeManifest(options = {}) {
+   if (targets && targets.length > 0) {
+     const target = targets[0];
+     const manifestUrl = normalizeUrls(target.manifest.url, options.apiHost)[0];
+-    const response = await request6(manifestUrl, { dispatcher: options.dispatcher, throwOnError: true });
++    const response = await request6(manifestUrl, { dispatcher: options.dispatcher });
+     const manifest2 = await response.body.json();
+     const result = {
+       files: manifest2.files,
+@@ -2751,7 +2751,7 @@ async function installQuiltVersion(options) {
+   return versionName;
+ }
+ async function getQuiltVersionsList(options) {
+-  const response = await request7(`${DEFAULT_META_URL}/v3/versions/loader`, { dispatcher: options == null ? void 0 : options.dispatcher, throwOnError: true });
++  const response = await request7(`${DEFAULT_META_URL}/v3/versions/loader`, { dispatcher: options == null ? void 0 : options.dispatcher });
+   const content = await response.body.json();
+   return content;
+ }

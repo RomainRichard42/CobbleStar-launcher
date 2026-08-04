@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ChevronRight,
   CircleUserRound,
@@ -17,7 +17,7 @@ import { fallbackNews } from './data/news'
 import logo from './assets/cobblestar-logo.png'
 
 type LaunchState = 'idle' | 'checking' | 'ready' | 'running'
-type MinecraftAccount = { id: string; name: string; skinUrl?: string }
+type MinecraftAccount = { id: string; name: string; skinUrl?: string; skinData?: string }
 type AuthDialog =
   | { mode: 'device'; userCode: string; verificationUri: string; message: string }
   | { mode: 'error'; message: string }
@@ -30,6 +30,30 @@ type UpdateStatus =
   | { state: 'current'; version: string }
   | { state: 'error'; message: string }
 
+// Un skin Minecraft est un atlas : la face avant de la tête occupe le carré
+// (8,8)-(16,16) et le « chapeau » (seconde couche, souvent cheveux ou
+// casquette) le carré (40,8)-(48,16). On superpose les deux dans un canvas de
+// 8x8 pixels que le CSS agrandit ensuite en pixel art bien net.
+function PlayerHead({ skin, name }: { skin: string; name: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const context = canvasRef.current?.getContext('2d')
+    if (!context) return
+    const image = new Image()
+    image.onload = () => {
+      context.clearRect(0, 0, 8, 8)
+      context.drawImage(image, 8, 8, 8, 8, 0, 0, 8, 8)
+      // Les skins hérités font 64x32 et n'ont pas de seconde couche : y piocher
+      // ces pixels ramènerait un morceau de bras à la place du chapeau.
+      if (image.height >= 64) context.drawImage(image, 40, 8, 8, 8, 0, 0, 8, 8)
+    }
+    image.src = skin
+  }, [skin])
+
+  return <canvas className="account-avatar" ref={canvasRef} width={8} height={8} aria-label={`Tête de ${name}`} />
+}
+
 export function App() {
   const [launchState, setLaunchState] = useState<LaunchState>('idle')
   const [progress, setProgress] = useState(0)
@@ -41,10 +65,21 @@ export function App() {
   const [authenticating, setAuthenticating] = useState(false)
   const [authDialog, setAuthDialog] = useState<AuthDialog>(null)
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null)
+  const [booting, setBooting] = useState(true)
+  const [installing, setInstalling] = useState(false)
 
   useEffect(() => {
-    void window.cobblestar?.getAccount().then(setAccount)
-    void window.cobblestar?.getSettings().then((settings) => setMemory(settings.memoryMb))
+    const startedAt = Date.now()
+    void Promise.all([
+      window.cobblestar?.getAccount().then(setAccount),
+      window.cobblestar?.getSettings().then((settings) => setMemory(settings.memoryMb)),
+    ]).finally(() => {
+      // Restaurer la session prend parfois 20 ms, parfois deux secondes (appels
+      // Microsoft). Un splash qui disparaît instantanément est perçu comme un
+      // clignotement de bug : on lui garantit une durée minimale lisible.
+      const remaining = Math.max(0, 700 - (Date.now() - startedAt))
+      window.setTimeout(() => setBooting(false), remaining)
+    })
     const removeDeviceCodeListener = window.cobblestar?.onDeviceCode((payload) => {
       setAuthDialog({ mode: 'device', ...payload })
     })
@@ -71,6 +106,12 @@ export function App() {
     if (launchState === 'checking' || launchState === 'running') return
     if (!window.cobblestar) {
       setAuthDialog({ mode: 'error', message: 'Le jeu peut uniquement être lancé depuis l’application CobbleStar.' })
+      return
+    }
+    // Sans compte le lancement échouerait de toute façon : autant enchaîner
+    // directement sur la connexion plutôt que d'afficher une erreur.
+    if (!account) {
+      void handleAccount()
       return
     }
     setProgress(0)
@@ -109,6 +150,15 @@ export function App() {
 
   return (
     <main className="launcher-shell">
+      {(booting || installing) && (
+        <div className={`boot-splash ${booting ? '' : 'boot-splash-update'}`} role="status">
+          <div className="boot-halo" />
+          <img src={logo} alt="" />
+          <div className="boot-bar"><i /></div>
+          <small>{installing ? 'INSTALLATION DE LA MISE À JOUR…' : 'CHARGEMENT…'}</small>
+        </div>
+      )}
+
       <div className="cosmos" aria-hidden="true">
         <i className="planet planet-one" />
         <i className="planet planet-two" />
@@ -163,8 +213,13 @@ export function App() {
         </div>
 
         <aside className="account-card glass">
-          <div className="account-icon"><CircleUserRound size={25} /></div>
-          <div><small>COMPTE JOUEUR</small><strong>{account?.name ?? 'Non connecté'}</strong></div>
+          {account?.skinData
+            ? <PlayerHead skin={account.skinData} name={account.name} />
+            : <div className="account-icon"><CircleUserRound size={25} /></div>}
+          <div>
+            <small className={account ? 'account-online' : undefined}>{account ? 'CONNECTÉ' : 'COMPTE JOUEUR'}</small>
+            <strong>{account?.name ?? 'Non connecté'}</strong>
+          </div>
           <button onClick={handleAccount} disabled={authenticating}>
             {authenticating ? 'Connexion en cours…' : account ? 'Déconnexion' : 'Connexion Microsoft'}
             <ChevronRight size={17} />
@@ -198,18 +253,26 @@ export function App() {
           {updateStatus?.state === 'downloading' ? (
             <><div className="progress"><i style={{ width: `${updateStatus.percent}%` }} /></div><span>Mise à jour du launcher… {updateStatus.percent}%</span></>
           ) : updateStatus?.state === 'downloaded' ? (
-            <button className="update-install" onClick={() => window.cobblestar?.installUpdate()}>
+            <button className="update-install" onClick={() => {
+              // L'overlay part avant l'appel : quitAndInstall coupe le
+              // processus, on n'aurait plus l'occasion de peindre après.
+              setInstalling(true)
+              window.setTimeout(() => window.cobblestar?.installUpdate(), 400)
+            }}>
               Version {updateStatus.version} prête — Redémarrer et installer
             </button>
           ) : launchState === 'checking' ? (
             <><div className="progress"><i style={{ width: `${progress}%` }} /></div><span>{gamePhase} {progress}%</span></>
           ) : (
-            <><UsersRound size={17} /><span>{updateStatus?.state === 'available' ? `Nouvelle version ${updateStatus.version} détectée…` : launchState === 'running' ? 'Minecraft est ouvert' : launchState === 'ready' ? 'Minecraft est prêt' : 'Minecraft 1.21.1 • Fabric • connexion automatique au serveur'}</span></>
+            <><UsersRound size={17} /><span>{updateStatus?.state === 'available' ? `Nouvelle version ${updateStatus.version} détectée…` : !account ? 'Connecte ton compte Microsoft pour rejoindre le serveur' : launchState === 'running' ? 'Minecraft est ouvert' : launchState === 'ready' ? 'Minecraft est prêt' : 'Minecraft 1.21.1 • Fabric • connexion automatique au serveur'}</span></>
           )}
         </div>
         <button className="play-button" onClick={checkInstallation} disabled={launchState === 'checking' || launchState === 'running'}>
-          <span className="play-icon"><Play size={22} fill="currentColor" /></span>
-          <span><small>{launchState === 'running' ? 'JEU EN COURS' : launchState === 'ready' ? 'PRÊT À REJOUER' : 'LANCER LE JEU'}</small><strong>{launchState === 'checking' ? 'PRÉPARATION…' : launchState === 'running' ? 'OUVERT' : 'JOUER'}</strong></span>
+          <span className="play-icon">{account ? <Play size={22} fill="currentColor" /> : <CircleUserRound size={22} />}</span>
+          <span>
+            <small>{!account ? 'COMPTE REQUIS' : launchState === 'running' ? 'JEU EN COURS' : launchState === 'ready' ? 'PRÊT À REJOUER' : 'LANCER LE JEU'}</small>
+            <strong>{!account ? 'SE CONNECTER' : launchState === 'checking' ? 'PRÉPARATION…' : launchState === 'running' ? 'OUVERT' : 'JOUER'}</strong>
+          </span>
           <ChevronRight size={24} />
         </button>
       </footer>
