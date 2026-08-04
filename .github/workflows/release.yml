@@ -34,6 +34,16 @@ jobs:
           if (-not (Get-ChildItem "release/*.exe")) { throw "L'installateur EXE est absent" }
           if (-not (Get-ChildItem "release/*.exe.blockmap")) { throw "Le blockmap est absent" }
 
+      - name: Générer les empreintes SHA256
+        shell: pwsh
+        run: |
+          $lines = Get-ChildItem "release/*.exe" | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)"
+          }
+          $lines | Set-Content -Encoding utf8 "release/SHA256SUMS.txt"
+          Get-Content "release/SHA256SUMS.txt"
+
       - name: Publier tous les fichiers dans la Release
         shell: bash
         run: |
@@ -41,6 +51,7 @@ jobs:
             release/*.exe \
             release/*.exe.blockmap \
             release/latest.yml \
+            release/SHA256SUMS.txt \
             --title "$GITHUB_REF_NAME" \
             --generate-notes
         env:

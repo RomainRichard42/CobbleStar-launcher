@@ -68,3 +68,28 @@ Pour distribuer le `.mrpack`, renseigne dans `launcher.config.json` une URL HTTP
 Change `modpackVersion` à chaque mise à jour du pack pour forcer sa resynchronisation chez les joueurs.
 
 Ne placez jamais de secret Microsoft dans le code du renderer. L’authentification et le lancement doivent rester dans le processus principal Electron.
+
+## Sécurité : pourquoi Windows/l'antivirus peut bloquer le launcher
+
+L'installateur n'est **pas signé numériquement** (aucun certificat de signature de code). C'est très courant pour les projets communautaires et cela déclenche deux protections automatiques, sans rapport avec un réel danger :
+
+- **SmartScreen** (Windows) affiche un avertissement tant que l'exécutable n'a pas accumulé assez de téléchargements auprès d'utilisateurs Windows.
+- **Certains antivirus** détectent de façon heuristique les applications Electron/NSIS non signées qui téléchargent des fichiers après l'installation (ici : Java, Minecraft, Fabric, les mods) — un comportement qui ressemble à celui d'un dropper de malware même s'il est légitime.
+
+### Vérifier l'intégrité d'un installateur téléchargé
+
+Chaque Release publie un fichier `SHA256SUMS.txt` à côté de l'installateur. Pour vérifier que le fichier téléchargé n'a pas été altéré :
+
+```powershell
+Get-FileHash "CobbleStar-Launcher-<version>-win-x64.exe" -Algorithm SHA256
+```
+
+Compare le résultat avec la ligne correspondante dans `SHA256SUMS.txt` de la même Release.
+
+### Si Windows ou ton antivirus bloque l'installateur
+
+1. Vérifie d'abord que le hash correspond (voir ci-dessus).
+2. Sur l'écran SmartScreen, clique sur **Informations complémentaires** puis **Exécuter quand même**.
+3. Si un antivirus supprime le fichier, ajoute une exception ou signale le faux positif à l'éditeur de l'antivirus.
+
+Chaque nouvelle version publiée réinitialise en partie la réputation SmartScreen ; ces avertissements devraient diminuer avec le temps et le nombre de téléchargements.
