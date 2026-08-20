@@ -448,10 +448,10 @@ export async function startGame(window: BrowserWindow, settings: LauncherSetting
     gameRunning = true
     report(window, { state: 'running', phase: 'Minecraft est lancé.', progress: 100 })
 
-    // Le processus Java est autonome. Une fois le spawn confirmé, le launcher
-    // libère totalement l'écran et se ferme comme un vrai lanceur de jeu.
+    // Le processus Java est autonome. Une fois le spawn confirmé, on cache la
+    // fenêtre lanceuse pour éviter une fermeture prématurée du process.
     setTimeout(() => {
-      if (!window.isDestroyed()) window.close()
+      if (!window.isDestroyed()) window.hide()
     }, 350)
 
     // `exit` et `error` peuvent se suivre : on ne ferme le descripteur qu'une fois.
@@ -465,6 +465,9 @@ export async function startGame(window: BrowserWindow, settings: LauncherSetting
     child.once('exit', (code) => {
       gameRunning = false
       closeLog()
+      if (!window.isDestroyed()) {
+        window.show()
+      }
       report(window, {
         state: 'stopped',
         phase: code === 0 ? 'Minecraft a été fermé.' : `Minecraft s’est arrêté (code ${code ?? 'inconnu'}). Voir ${logPath}`,
@@ -473,6 +476,9 @@ export async function startGame(window: BrowserWindow, settings: LauncherSetting
     child.once('error', (error) => {
       gameRunning = false
       closeLog()
+      if (!window.isDestroyed()) {
+        window.show()
+      }
       report(window, { state: 'error', phase: 'Minecraft n’a pas pu démarrer.', message: error.message })
     })
 
