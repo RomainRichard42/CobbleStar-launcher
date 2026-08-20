@@ -24,15 +24,46 @@ jobs:
       - name: Installer les dépendances
         run: npm ci
 
-      - name: Construire l’installateur
+      - name: Construire l’installateur (non signé)
         run: npm run dist:win
 
-      - name: Vérifier les fichiers de mise à jour
+      - name: Vérifier les fichiers générés
         shell: pwsh
         run: |
           if (-not (Test-Path "release/latest.yml")) { throw "latest.yml est absent" }
           if (-not (Get-ChildItem "release/*.exe")) { throw "L'installateur EXE est absent" }
-          if (-not (Get-ChildItem "release/*.exe.blockmap")) { throw "Le blockmap est absent" }
+
+      - name: Envoyer l'installateur non signé (artifact GitHub)
+        id: upload-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-installer
+          path: release/*.exe
+          retention-days: 1
+
+      - name: Signer via SignPath
+        id: signpath
+        uses: signpath/github-action-submit-signing-request@v2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: signed
+
+      - name: Remplacer l'installateur par la version signée
+        shell: pwsh
+        run: |
+          $unsigned = Get-ChildItem "release/*.exe" | Select-Object -First 1
+          $signed = Get-ChildItem "signed/*.exe" | Select-Object -First 1
+          if (-not $signed) { throw "Aucun fichier signé reçu de SignPath" }
+          Copy-Item $signed.FullName $unsigned.FullName -Force
+          # Le blockmap (calculé sur le fichier non signé) ne correspond plus au binaire signé.
+          # electron-updater bascule proprement en téléchargement complet en son absence.
+          Remove-Item "release/*.exe.blockmap" -ErrorAction SilentlyContinue
+          node scripts/update-latest-yml.mjs $unsigned.FullName "release/latest.yml"
 
       - name: Générer les empreintes SHA256
         shell: pwsh
@@ -49,7 +80,6 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" \
             release/*.exe \
-            release/*.exe.blockmap \
             release/latest.yml \
             release/SHA256SUMS.txt \
             --title "$GITHUB_REF_NAME" \

@@ -1,0 +1,40 @@
+name: Publier le modpack
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'modpack/*.mrpack'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Vérifier le pack
+        id: pack
+        shell: bash
+        run: |
+          pack="$(find modpack -maxdepth 1 -type f -name '*.mrpack' | sort | tail -n 1)"
+          test -n "$pack" || { echo "Aucun fichier .mrpack dans modpack/" >&2; exit 1; }
+          echo "path=$pack" >> "$GITHUB_OUTPUT"
+          echo "name=$(basename "$pack")" >> "$GITHUB_OUTPUT"
+
+      - name: Créer la release permanente si nécessaire
+        shell: bash
+        run: |
+          gh release view modpack-latest >/dev/null 2>&1 || gh release create modpack-latest --title "Modpack CobbleStar — version actuelle" --notes "Cette release est mise à jour automatiquement à chaque publication du modpack."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Remplacer le modpack publié
+        shell: bash
+        run: gh release upload modpack-latest "${{ steps.pack.outputs.path }}" --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

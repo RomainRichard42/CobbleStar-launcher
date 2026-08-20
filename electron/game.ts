@@ -21,6 +21,7 @@ export type GameConfig = {
   fabricLoaderVersion?: string
   serverHost: string
   serverPort: number
+  modpackFeedUrl?: string
   modpackUrl?: string
   modpackVersion?: string
 }
@@ -105,10 +106,30 @@ async function downloadFile(urls: string[], destination: string, hashes?: { sha1
   throw lastError instanceof Error ? lastError : new Error(`Impossible de télécharger ${destination}`)
 }
 
+async function resolveModpack(config: GameConfig) {
+  if (config.modpackFeedUrl) {
+    try {
+      const response = await net.fetch(config.modpackFeedUrl, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'CobbleStar-Launcher' } })
+      if (!response.ok) throw new Error(`GitHub ${response.status}`)
+      const payload = await response.json() as { draft?: boolean; prerelease?: boolean; tag_name?: string; assets?: Array<{ name?: string; browser_download_url?: string; updated_at?: string }> } | Array<{ draft?: boolean; prerelease?: boolean; tag_name?: string; assets?: Array<{ name?: string; browser_download_url?: string; updated_at?: string }> }>
+      const releases = Array.isArray(payload) ? payload : [payload]
+      for (const release of releases) {
+        if (release.draft) continue
+        const asset = release.assets?.find((candidate) => candidate.name?.toLowerCase().endsWith('.mrpack') && candidate.browser_download_url)
+        if (asset?.browser_download_url) return { url: asset.browser_download_url, version: `${release.tag_name ?? 'release'}:${asset.name}:${asset.updated_at ?? ''}` }
+      }
+    } catch (error) {
+      console.warn('[modpack] flux GitHub indisponible, utilisation de la version configurée', error)
+    }
+  }
+  return config.modpackUrl ? { url: config.modpackUrl, version: config.modpackVersion || config.modpackUrl } : null
+}
+
 async function syncModpack(window: BrowserWindow, gamePath: string, config: GameConfig) {
-  if (!config.modpackUrl) return
+  const remote = await resolveModpack(config)
+  if (!remote) return
   const markerPath = path.join(gamePath, '.cobblestar-modpack.json')
-  const desiredVersion = config.modpackVersion || config.modpackUrl
+  const desiredVersion = remote.version
   let previousFiles: string[] = []
   try {
     const marker = JSON.parse(await fs.readFile(markerPath, 'utf8')) as { version?: string; files?: string[] }
@@ -119,7 +140,7 @@ async function syncModpack(window: BrowserWindow, gamePath: string, config: Game
   }
 
   report(window, { state: 'preparing', phase: 'Téléchargement du modpack CobbleStar…', progress: 74 })
-  const response = await net.fetch(config.modpackUrl)
+  const response = await net.fetch(remote.url)
   if (!response.ok) throw new Error(`Le modpack est inaccessible (${response.status}).`)
   const archivePath = path.join(gamePath, '.cobblestar-download.mrpack')
   await fs.writeFile(archivePath, Buffer.from(await response.arrayBuffer()))
@@ -420,4 +441,3 @@ export async function startGame(window: BrowserWindow, settings: LauncherSetting
     return { ok: false as const, code: 'launch_failed', message }
   }
 }
-

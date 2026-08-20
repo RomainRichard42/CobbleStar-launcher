@@ -1,6 +1,6 @@
 # CobbleStar Launcher
 
-Première base du launcher officiel CobbleStar pour Minecraft **1.21.1 Fabric**.
+Launcher officiel CobbleStar pour Minecraft **1.21.1 Fabric**. Il affiche les actualités publiées depuis le site et synchronise automatiquement le jeu avant chaque lancement.
 
 ## Démarrer l’interface
 
@@ -54,18 +54,26 @@ La connexion utilise le flux officiel Microsoft avec code d’appareil : le joue
 
 L’identifiant client n’est pas un secret. Ne crée et n’ajoute aucun secret client au launcher.
 
+## Actualités
+
+Le launcher lit `https://cobblestar-mc.fr/api/news`. Une actualité publiée depuis le studio du site apparaît donc sans reconstruire le launcher. En cas de coupure du site, un contenu de secours reste affiché.
+
+Le mod utilise la même source côté serveur : `/actus` ouvre le journal en jeu et la dernière annonce est signalée à la connexion.
+
 ## Jeu et modpack
 
 Le bouton Jouer télécharge automatiquement Java 21, Minecraft 1.21.1 et Fabric dans le dossier utilisateur de l’application, puis connecte le joueur au serveur. La RAM choisie est conservée dans `settings.json` sous le dossier `userData` d’Electron et survit aux mises à jour.
 
-Pour distribuer le `.mrpack`, renseigne dans `launcher.config.json` une URL HTTPS téléchargeable directement :
+La version actuelle du pack est la pièce jointe `.mrpack` de la release permanente `modpack-latest`. Pour publier une mise à jour :
 
-```json
-"modpackUrl": "https://exemple.fr/CobbleStar-1.0.0.mrpack",
-"modpackVersion": "1.0.0"
+```bash
+cp CobbleStar-1.2.0.mrpack modpack/
+git add modpack/CobbleStar-1.2.0.mrpack
+git commit -m "chore: publie le modpack 1.2.0"
+git push origin main
 ```
 
-Change `modpackVersion` à chaque mise à jour du pack pour forcer sa resynchronisation chez les joueurs.
+Le workflow `Publier le modpack` remplace automatiquement l’asset de la release. Au lancement suivant, le launcher voit sa nouvelle date de mise à jour, télécharge le pack et ne supprime que les fichiers précédemment gérés par CobbleStar. L’URL et la version fixes de `launcher.config.json` servent uniquement de secours si GitHub est indisponible.
 
 Ne placez jamais de secret Microsoft dans le code du renderer. L’authentification et le lancement doivent rester dans le processus principal Electron.
 

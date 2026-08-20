@@ -1,9 +1,12 @@
 {
   "microsoftClientId": "a681a9e7-8d27-413a-8606-42fe1ca32c8b",
+  "newsUrl": "https://cobblestar-mc.fr/api/news",
+  "websiteUrl": "https://cobblestar-mc.fr",
   "game": {
     "minecraftVersion": "1.21.1",
     "serverHost": "play.cobblestar-mc.fr",
     "serverPort": 25574,
+    "modpackFeedUrl": "https://api.github.com/repos/RomainRichard42/CobbleStar-launcher/releases/tags/modpack-latest",
     "modpackUrl": "https://github.com/RomainRichard42/CobbleStar-launcher/releases/download/v0.5.0/CobbleStar-1.1.0.mrpack",
     "modpackVersion": "1.1.0"
   }

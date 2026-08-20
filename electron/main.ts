@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, net, shell } from 'electron'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -12,6 +12,8 @@ const isDev = !app.isPackaged
 
 type LauncherFileConfig = {
   microsoftClientId?: string
+  newsUrl?: string
+  websiteUrl?: string
   game?: Partial<GameConfig>
 }
 
@@ -35,9 +37,19 @@ function getGameConfig(): GameConfig {
     fabricLoaderVersion: configured?.fabricLoaderVersion?.trim() || undefined,
     serverHost: configured?.serverHost?.trim() || 'play.cobblestar-mc.fr',
     serverPort: Number.isInteger(configured?.serverPort) ? Number(configured?.serverPort) : 25574,
+    modpackFeedUrl: configured?.modpackFeedUrl?.trim() || undefined,
     modpackUrl: configured?.modpackUrl?.trim() || undefined,
     modpackVersion: configured?.modpackVersion?.trim() || undefined,
   }
+}
+
+async function getNews() {
+  const configured = getLauncherConfig();
+  const url = configured.newsUrl?.trim() || 'https://cobblestar-mc.fr/api/news';
+  if (!url.startsWith('https://')) throw new Error('L’adresse des actualités doit utiliser HTTPS.');
+  const response = await net.fetch(url, { headers: { Accept: 'application/json', 'User-Agent': 'CobbleStar-Launcher' } });
+  if (!response.ok) throw new Error(`Actualités indisponibles (${response.status}).`);
+  return response.json();
 }
 
 function createWindow() {
@@ -80,6 +92,8 @@ app.whenReady().then(() => {
   ipcMain.handle('external:open', (_event, url: string) => {
     if (/^https:\/\//.test(url)) return shell.openExternal(url)
   })
+  ipcMain.handle('news:get', () => getNews())
+  ipcMain.handle('news:open-site', () => shell.openExternal(`${getLauncherConfig().websiteUrl?.trim() || 'https://cobblestar-mc.fr'}/actualites/`))
   ipcMain.handle('auth:login', async (event) => {
     const window = BrowserWindow.fromWebContents(event.sender)
     if (!window) return { ok: false, code: 'window_missing', message: 'Fenêtre du launcher introuvable.' }
