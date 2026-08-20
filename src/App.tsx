@@ -90,7 +90,7 @@ export function App() {
     {(booting || installing) && <div className="boot-splash" role="status"><img src={logo} alt=""/><div className="boot-bar"><i/></div><small>{installing ? 'INSTALLATION DE LA MISE À JOUR…' : 'OUVERTURE DU LAUNCHER…'}</small></div>}
 
     <header className="titlebar">
-      <div className="brand-mini"><img src={logo} alt=""/><div><strong>COBBLESTAR</strong><small>LAUNCHER OFFICIEL</small></div></div>
+      <div className="brand-mini"><img src={logo} alt="Logo CobbleStar"/><div><strong>COBBLESTAR</strong><small>LAUNCHER OFFICIEL</small></div></div>
       <nav><button className="nav-active">Jouer</button><button onClick={() => window.cobblestar?.openNewsSite()}>Actualités <ExternalLink size={12}/></button><button onClick={() => setSettingsOpen(true)}><Settings size={13}/> Paramètres</button></nav>
       <div className="window-actions"><button aria-label="Réduire" onClick={() => window.cobblestar?.minimize()}><Minus size={15}/></button><button aria-label="Fermer" onClick={() => window.cobblestar?.close()}><X size={16}/></button></div>
     </header>
@@ -98,12 +98,14 @@ export function App() {
     <section className="workspace">
       <button className={`headline accent-${featured.accent}`} onClick={() => setSelectedNews(featured)}>
         <img src={newsImage(featured)} alt=""/><span className="headline-shade"/>
-        <div className="headline-copy"><small>{featured.category} · {displayDate(featured.publishedAt)}</small><h1>{featured.title}</h1><p>{featured.excerpt}</p><b>Lire l’annonce <ChevronRight size={15}/></b></div>
+        <div className="hero-brand"><img src={logo} alt=""/><div><small>LE SERVEUR COBBLEMON FRANCOPHONE</small><strong>COBBLE<span>STAR</span></strong><p>Explore. Capture. Construis ton histoire.</p></div></div>
+        <div className="headline-copy"><small>À LA UNE · {featured.category} · {displayDate(featured.publishedAt)}</small><h1>{featured.title}</h1><p>{featured.excerpt}</p><b>Découvrir l’annonce <ChevronRight size={15}/></b></div>
         <em>À LA UNE</em>
       </button>
 
       <aside className="play-dock">
-        <div className="dock-title"><span>PRÊT À JOUER</span><small>MINECRAFT {launcherConfig.minecraftVersion} · FABRIC</small></div>
+        <div className="dock-brand"><img src={logo} alt=""/><div><small>ACCÈS AU SERVEUR</small><strong>JOUER À COBBLESTAR</strong></div></div>
+        <div className="dock-title"><span>SESSION DE JEU</span><small>MINECRAFT {launcherConfig.minecraftVersion} · FABRIC</small></div>
         <button className="account-line" onClick={handleAccount} disabled={authenticating}>
           {account?.skinData ? <PlayerHead skin={account.skinData} name={account.name}/> : <span className="account-placeholder"><CircleUserRound size={22}/></span>}
           <span><small>{account ? 'COMPTE CONNECTÉ' : 'COMPTE MICROSOFT'}</small><strong>{account?.name ?? 'Se connecter'}</strong></span><ChevronRight size={16}/>
@@ -112,7 +114,7 @@ export function App() {
         <div className="install-state">
           {launchState === 'checking' || updateStatus?.state === 'downloading' ? <><div><i style={{ width: `${updateStatus?.state === 'downloading' ? updateStatus.percent : progress}%` }}/></div><span>{updateStatus?.state === 'downloading' ? `Mise à jour du launcher · ${updateStatus.percent}%` : `${gamePhase} · ${progress}%`}</span></> : <><b>{updateStatus?.state === 'current' ? '✓ À JOUR' : launchState === 'running' ? '● JEU OUVERT' : '✓ INSTALLATION VÉRIFIÉE'}</b><span>Le modpack est contrôlé avant chaque lancement.</span></>}
         </div>
-        {updateStatus?.state === 'downloaded' ? <button className="update-button" onClick={() => { setInstalling(true); window.setTimeout(() => window.cobblestar?.installUpdate(), 350) }}>Installer la version {updateStatus.version}</button> : <button className="play-button" onClick={() => void start()} disabled={busy}><span><Play size={20} fill="currentColor"/></span><div><small>{!account ? 'CONNEXION REQUISE' : busy ? gamePhase : 'LANCER COBBLESTAR'}</small><strong>{!account ? 'SE CONNECTER' : launchState === 'running' ? 'JEU OUVERT' : launchState === 'checking' ? `${progress}%` : 'JOUER'}</strong></div><ChevronRight size={22}/></button>}
+        {updateStatus?.state === 'downloaded' ? <button className="update-button" onClick={() => { setInstalling(true); window.setTimeout(() => window.cobblestar?.installUpdate(), 350) }}>Installer la version {updateStatus.version}</button> : <button className="play-button" onClick={() => void start()} disabled={busy}><span><Play size={20} fill="currentColor"/></span><div><small>{!account ? 'CONNEXION REQUISE' : busy ? gamePhase : 'SERVEUR COBBLESTAR'}</small><strong>{!account ? 'SE CONNECTER' : launchState === 'running' ? 'JEU OUVERT' : launchState === 'checking' ? `${progress}%` : 'LANCER LE JEU'}</strong></div><ChevronRight size={22}/></button>}
       </aside>
 
       <section className="news-strip"><header><div><small>JOURNAL DU SERVEUR</small><h2>Dernières nouvelles</h2></div><button onClick={() => window.cobblestar?.openNewsSite()}>Tout voir <ChevronRight size={14}/></button></header><div>{orderedNews.slice(0, 3).map((item, index) => <button key={item.id} className={`news-row accent-${item.accent}`} onClick={() => setSelectedNews(item)}><span>{String(index + 1).padStart(2, '0')}</span><div><small>{item.category} · {displayDate(item.publishedAt)}</small><b>{item.title}</b><p>{item.excerpt}</p></div><ChevronRight size={16}/></button>)}</div></section>

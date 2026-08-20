@@ -194,6 +194,45 @@ async function syncModpack(window: BrowserWindow, gamePath: string, config: Game
   await fs.writeFile(markerPath, JSON.stringify({ version: desiredVersion, files: managedFiles }, null, 2), 'utf8')
 }
 
+const REQUIRED_RESOURCE_PACKS = ['file/CobbleStar Ressource Pack.zip']
+
+/**
+ * Le .mrpack installe bien le pack CobbleStar, mais YOSBR ne recopie ses
+ * options que pour un profil vierge. On complète donc uniquement la ligne des
+ * packs actifs, sans remplacer les réglages vidéo, audio ou les autres packs
+ * choisis par le joueur.
+ */
+async function ensureResourcePacksInFile(optionsPath: string) {
+  let options: string
+  try {
+    options = await fs.readFile(optionsPath, 'utf8')
+  } catch {
+    return
+  }
+
+  const newline = options.includes('\r\n') ? '\r\n' : '\n'
+  const lines = options.split(/\r?\n/)
+  const index = lines.findIndex((line) => line.startsWith('resourcePacks:['))
+  if (index < 0) return
+
+  const missing = REQUIRED_RESOURCE_PACKS.filter((pack) => !lines[index].includes(`"${pack}"`))
+  if (!missing.length) return
+
+  const closingBracket = lines[index].lastIndexOf(']')
+  if (closingBracket < 0) return
+  const prefix = lines[index].slice(0, closingBracket)
+  const separator = prefix.endsWith('[') ? '' : ','
+  lines[index] = `${prefix}${separator}${missing.map((pack) => `"${pack}"`).join(',')}]${lines[index].slice(closingBracket + 1)}`
+  await fs.writeFile(optionsPath, lines.join(newline), 'utf8')
+}
+
+async function ensureRequiredResourcePacks(gamePath: string) {
+  await Promise.all([
+    ensureResourcePacksInFile(path.join(gamePath, 'options.txt')),
+    ensureResourcePacksInFile(path.join(gamePath, 'config', 'yosbr', 'options.txt')),
+  ])
+}
+
 type JavaManifestFileEntry = {
   type: 'file'
   downloads: { raw: { url: string; sha1: string } }
@@ -356,6 +395,7 @@ export async function startGame(window: BrowserWindow, settings: LauncherSetting
     const javaPath = await ensureJava(window, dataPath)
     const fabricVersion = await ensureMinecraft(window, dataPath, config)
     await syncModpack(window, dataPath, config)
+    await ensureRequiredResourcePacks(dataPath)
 
     report(window, { state: 'preparing', phase: 'Démarrage de Minecraft…', progress: 94 })
 
@@ -396,7 +436,7 @@ export async function startGame(window: BrowserWindow, settings: LauncherSetting
       maxMemory: settings.memoryMb,
       // Volontairement aucune connexion automatique : le jeu doit s'ouvrir sur
       // l'écran titre CobbleStar, où le bouton « Rejoindre CobbleStar »
-      // (FancyMenu) déclenche la connexion. Passer --quickPlayMultiplayer ici
+      // déclenche la connexion. Passer --quickPlayMultiplayer ici
       // sauterait ce menu. Note : --server/--port n'existent plus depuis 1.20.
     }).catch((error: unknown) => {
       // Si le spawn échoue, personne ne fermera le descripteur plus bas.
@@ -407,6 +447,12 @@ export async function startGame(window: BrowserWindow, settings: LauncherSetting
     gameStarting = false
     gameRunning = true
     report(window, { state: 'running', phase: 'Minecraft est lancé.', progress: 100 })
+
+    // Le processus Java est autonome. Une fois le spawn confirmé, le launcher
+    // libère totalement l'écran et se ferme comme un vrai lanceur de jeu.
+    setTimeout(() => {
+      if (!window.isDestroyed()) window.close()
+    }, 350)
 
     // `exit` et `error` peuvent se suivre : on ne ferme le descripteur qu'une fois.
     let logClosed = false
