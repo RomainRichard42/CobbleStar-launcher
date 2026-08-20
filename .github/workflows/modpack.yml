@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Vérifier le pack
         id: pack
@@ -23,6 +25,7 @@ jobs:
         run: |
           pack="$(find modpack -maxdepth 1 -type f -name '*.mrpack' | sort | tail -n 1)"
           test -n "$pack" || { echo "Aucun fichier .mrpack dans modpack/" >&2; exit 1; }
+          test "$(stat -c%s "$pack")" -gt 1000000 || { echo "Le fichier .mrpack semble être un pointeur LFS non téléchargé" >&2; exit 1; }
           echo "path=$pack" >> "$GITHUB_OUTPUT"
           echo "name=$(basename "$pack")" >> "$GITHUB_OUTPUT"
 

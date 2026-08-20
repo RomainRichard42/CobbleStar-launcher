@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Tag existant à publier
+        required: true
+        default: v0.6.0
 
 permissions:
   contents: write
@@ -11,6 +17,12 @@ permissions:
 jobs:
   windows:
     runs-on: windows-latest
+    env:
+      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+      SIGNPATH_ORG_ID: ${{ vars.SIGNPATH_ORG_ID }}
+      SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+      SIGNPATH_POLICY_SLUG: ${{ vars.SIGNPATH_POLICY_SLUG }}
+      RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
     steps:
       - name: Récupérer le projet
         uses: actions/checkout@v4
@@ -42,18 +54,20 @@ jobs:
           retention-days: 1
 
       - name: Signer via SignPath
+        if: ${{ env.SIGNPATH_API_TOKEN != '' && env.SIGNPATH_ORG_ID != '' && env.SIGNPATH_PROJECT_SLUG != '' && env.SIGNPATH_POLICY_SLUG != '' }}
         id: signpath
         uses: signpath/github-action-submit-signing-request@v2
         with:
-          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: ${{ vars.SIGNPATH_ORG_ID }}
-          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
-          signing-policy-slug: ${{ vars.SIGNPATH_POLICY_SLUG }}
+          api-token: ${{ env.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ env.SIGNPATH_ORG_ID }}
+          project-slug: ${{ env.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: ${{ env.SIGNPATH_POLICY_SLUG }}
           github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
           wait-for-completion: true
           output-artifact-directory: signed
 
       - name: Remplacer l'installateur par la version signée
+        if: ${{ steps.signpath.outcome == 'success' }}
         shell: pwsh
         run: |
           $unsigned = Get-ChildItem "release/*.exe" | Select-Object -First 1
@@ -78,11 +92,12 @@ jobs:
       - name: Publier tous les fichiers dans la Release
         shell: bash
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            release/*.exe \
-            release/latest.yml \
-            release/SHA256SUMS.txt \
-            --title "$GITHUB_REF_NAME" \
+          files=(release/*.exe release/latest.yml release/SHA256SUMS.txt)
+          if compgen -G "release/*.exe.blockmap" >/dev/null; then
+            files+=(release/*.exe.blockmap)
+          fi
+          gh release create "$RELEASE_TAG" "${files[@]}" \
+            --title "$RELEASE_TAG" \
             --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

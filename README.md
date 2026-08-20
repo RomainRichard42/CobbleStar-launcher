@@ -73,7 +73,7 @@ git commit -m "chore: publie le modpack 1.2.0"
 git push origin main
 ```
 
-Le workflow `Publier le modpack` remplace automatiquement l’asset de la release. Au lancement suivant, le launcher voit sa nouvelle date de mise à jour, télécharge le pack et ne supprime que les fichiers précédemment gérés par CobbleStar. L’URL et la version fixes de `launcher.config.json` servent uniquement de secours si GitHub est indisponible.
+Les `.mrpack` sont suivis avec Git LFS car ils dépassent la limite de taille des fichiers GitHub classiques. Le workflow `Publier le modpack` récupère le fichier LFS puis remplace automatiquement l’asset de la release. Au lancement suivant, le launcher voit sa nouvelle date de mise à jour, télécharge le pack et ne supprime que les fichiers précédemment gérés par CobbleStar. L’URL et la version fixes de `launcher.config.json` servent uniquement de secours si GitHub est indisponible.
 
 Ne placez jamais de secret Microsoft dans le code du renderer. L’authentification et le lancement doivent rester dans le processus principal Electron.
 
