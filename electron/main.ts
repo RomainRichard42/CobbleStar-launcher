@@ -3,7 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ensureFreshSession, getMinecraftAccount, loginMicrosoft, logoutMicrosoft, restoreSession } from './auth.js'
-import { startGame, type GameConfig } from './game.js'
+import { prepareGameRepair, startGame, type GameConfig } from './game.js'
 import { getSettings, saveSettings } from './settings.js'
 import { installDownloadedUpdate, setupAutoUpdater } from './updater.js'
 
@@ -54,13 +54,13 @@ async function getNews() {
 
 function createWindow() {
   const window = new BrowserWindow({
-    width: 1280,
-    height: 760,
+    width: 1440,
+    height: 840,
     minWidth: 1040,
     minHeight: 680,
     frame: false,
     transparent: false,
-    backgroundColor: '#100b2b',
+    backgroundColor: '#080a20',
     title: 'CobbleStar Launcher',
     // electron-builder pose déjà l'icône sur l'exécutable packagé, mais la
     // fenêtre elle-même n'en a aucune : en développement la barre des tâches
@@ -111,6 +111,7 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('settings:get', () => getSettings())
   ipcMain.handle('settings:save', (_event, settings: { memoryMb?: number }) => saveSettings(settings))
+  ipcMain.handle('game:repair', () => prepareGameRepair())
   ipcMain.handle('game:start', async (event) => {
     const window = BrowserWindow.fromWebContents(event.sender)
     if (!window) return { ok: false, code: 'window_missing', message: 'Fenêtre du launcher introuvable.' }

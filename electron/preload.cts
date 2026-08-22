@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('cobblestar', {
   getAccount: () => ipcRenderer.invoke('auth:account'),
   getSettings: () => ipcRenderer.invoke('settings:get'),
   saveSettings: (settings: { memoryMb: number }) => ipcRenderer.invoke('settings:save', settings),
+  repairInstallation: () => ipcRenderer.invoke('game:repair'),
   startGame: () => ipcRenderer.invoke('game:start'),
   installUpdate: () => ipcRenderer.send('update:install'),
   onDeviceCode: (callback: (payload: unknown) => void) => {
