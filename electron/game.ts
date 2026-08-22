@@ -255,6 +255,55 @@ async function ensureSharpMainMenu(gamePath: string) {
 }
 
 /**
+ * Cobblemon attribue aussi M au résumé d'un Pokémon. Minecraft conserve alors
+ * deux actions sur la même touche et peut ne pas ouvrir le menu CobbleStar.
+ * On réserve M au menu demandé, et on ne désactive le raccourci Cobblemon que
+ * lorsqu'il utilise effectivement M afin de préserver toute autre personnalisation.
+ */
+async function reserveCobbleStarMenuKeyInFile(optionsPath: string) {
+  let options: string
+  try {
+    options = await fs.readFile(optionsPath, 'utf8')
+  } catch {
+    return
+  }
+
+  const newline = options.includes('\r\n') ? '\r\n' : '\n'
+  const lines = options.split(/\r?\n/)
+  const menuPrefix = 'key_key.cobblestar_planets.menu:'
+  const summaryPrefix = 'key_key.cobblemon.summary:'
+  const menuIndex = lines.findIndex((line) => line.startsWith(menuPrefix))
+  const expectedMenu = `${menuPrefix}key.keyboard.m`
+  let changed = false
+
+  if (menuIndex >= 0) {
+    if (lines[menuIndex] !== expectedMenu) {
+      lines[menuIndex] = expectedMenu
+      changed = true
+    }
+  } else {
+    const trailingEmptyLine = lines.at(-1) === ''
+    lines.splice(trailingEmptyLine ? lines.length - 1 : lines.length, 0, expectedMenu)
+    changed = true
+  }
+
+  const summaryIndex = lines.findIndex((line) => line.startsWith(summaryPrefix))
+  if (summaryIndex >= 0 && lines[summaryIndex] === `${summaryPrefix}key.keyboard.m`) {
+    lines[summaryIndex] = `${summaryPrefix}key.keyboard.unknown`
+    changed = true
+  }
+
+  if (changed) await fs.writeFile(optionsPath, lines.join(newline), 'utf8')
+}
+
+async function reserveCobbleStarMenuKey(gamePath: string) {
+  await Promise.all([
+    reserveCobbleStarMenuKeyInFile(path.join(gamePath, 'options.txt')),
+    reserveCobbleStarMenuKeyInFile(path.join(gamePath, 'config', 'yosbr', 'options.txt')),
+  ])
+}
+
+/**
  * Le .mrpack installe bien le pack CobbleStar, mais YOSBR ne recopie ses
  * options que pour un profil vierge. On complète donc uniquement la ligne des
  * packs actifs, sans remplacer les réglages vidéo, audio ou les autres packs
@@ -456,6 +505,7 @@ export async function startGame(window: BrowserWindow, settings: LauncherSetting
     await stopYosbrFromManagingGuiScale(dataPath)
     await ensureSharpMainMenu(dataPath)
     await ensureRequiredResourcePacks(dataPath)
+    await reserveCobbleStarMenuKey(dataPath)
 
     report(window, { state: 'preparing', phase: 'Démarrage de Minecraft…', progress: 94 })
 
