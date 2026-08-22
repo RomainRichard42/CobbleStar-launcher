@@ -254,10 +254,10 @@ async function ensureSharpMainMenu(gamePath: string) {
 }
 
 /**
- * Cobblemon attribue aussi M au résumé d'un Pokémon. Minecraft conserve alors
- * deux actions sur la même touche et peut ne pas ouvrir le menu CobbleStar.
- * On réserve M au menu demandé, et on ne désactive le raccourci Cobblemon que
- * lorsqu'il utilise effectivement M afin de préserver toute autre personnalisation.
+ * Les identifiants GLFW suivent la position QWERTY : sur un clavier AZERTY,
+ * key.keyboard.m est la touche virgule et key.keyboard.semicolon est la vraie
+ * touche M. On conserve donc la virgule pour le résumé Cobblemon et on réserve
+ * le M physique AZERTY au menu CobbleStar.
  */
 async function reserveCobbleStarMenuKeyInFile(optionsPath: string) {
   let options: string
@@ -272,7 +272,7 @@ async function reserveCobbleStarMenuKeyInFile(optionsPath: string) {
   const menuPrefix = 'key_key.cobblestar_planets.menu:'
   const summaryPrefix = 'key_key.cobblemon.summary:'
   const menuIndex = lines.findIndex((line) => line.startsWith(menuPrefix))
-  const expectedMenu = `${menuPrefix}key.keyboard.m`
+  const expectedMenu = `${menuPrefix}key.keyboard.semicolon`
   let changed = false
 
   if (menuIndex >= 0) {
@@ -287,8 +287,15 @@ async function reserveCobbleStarMenuKeyInFile(optionsPath: string) {
   }
 
   const summaryIndex = lines.findIndex((line) => line.startsWith(summaryPrefix))
-  if (summaryIndex >= 0 && lines[summaryIndex] === `${summaryPrefix}key.keyboard.m`) {
-    lines[summaryIndex] = `${summaryPrefix}key.keyboard.unknown`
+  const expectedSummary = `${summaryPrefix}key.keyboard.m`
+  if (summaryIndex >= 0) {
+    if (lines[summaryIndex] !== expectedSummary) {
+      lines[summaryIndex] = expectedSummary
+      changed = true
+    }
+  } else {
+    const trailingEmptyLine = lines.at(-1) === ''
+    lines.splice(trailingEmptyLine ? lines.length - 1 : lines.length, 0, expectedSummary)
     changed = true
   }
 
