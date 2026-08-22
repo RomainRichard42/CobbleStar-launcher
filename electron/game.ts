@@ -194,7 +194,33 @@ async function syncModpack(window: BrowserWindow, gamePath: string, config: Game
   await fs.writeFile(markerPath, JSON.stringify({ version: desiredVersion, files: managedFiles }, null, 2), 'utf8')
 }
 
-const REQUIRED_RESOURCE_PACKS = ['file/CobbleStar Ressource Pack.zip']
+const REQUIRED_RESOURCE_PACKS = [
+  'file/E19 Cobblemon Minimap Icons.zip',
+  'file/PackPackStar.zip',
+  'file/NouveauTags.zip',
+  'file/CobbleStar Ressource Pack.zip',
+]
+
+/**
+ * YOSBR ne doit fournir qu'un réglage initial, jamais reprendre la main sur
+ * l'échelle choisie ensuite par le joueur. Les anciens packs contenaient
+ * `guiScale:0` (automatique), ce qui redevenait x3 sur beaucoup d'écrans.
+ */
+async function stopYosbrFromManagingGuiScale(gamePath: string) {
+  const optionsPath = path.join(gamePath, 'config', 'yosbr', 'options.txt')
+  let options: string
+  try {
+    options = await fs.readFile(optionsPath, 'utf8')
+  } catch {
+    return
+  }
+  const newline = options.includes('\r\n') ? '\r\n' : '\n'
+  const lines = options.split(/\r?\n/)
+  const filtered = lines.filter((line) => !line.startsWith('guiScale:'))
+  if (filtered.length !== lines.length) {
+    await fs.writeFile(optionsPath, filtered.join(newline), 'utf8')
+  }
+}
 
 /**
  * Le .mrpack installe bien le pack CobbleStar, mais YOSBR ne recopie ses
@@ -395,6 +421,7 @@ export async function startGame(window: BrowserWindow, settings: LauncherSetting
     const javaPath = await ensureJava(window, dataPath)
     const fabricVersion = await ensureMinecraft(window, dataPath, config)
     await syncModpack(window, dataPath, config)
+    await stopYosbrFromManagingGuiScale(dataPath)
     await ensureRequiredResourcePacks(dataPath)
 
     report(window, { state: 'preparing', phase: 'Démarrage de Minecraft…', progress: 94 })
