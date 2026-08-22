@@ -499,6 +499,19 @@ function describeError(e: unknown, depth = 0): string {
   return `${prefix}${String(e)}`
 }
 
+export async function prepareGameRepair() {
+  if (gameStarting || gameRunning) {
+    return { ok: false as const, message: 'Ferme Minecraft avant de réparer l’installation.' }
+  }
+
+  const dataPath = path.join(app.getPath('userData'), 'minecraft')
+  await Promise.all([
+    fs.rm(path.join(dataPath, '.cobblestar-modpack.json'), { force: true }),
+    fs.rm(path.join(dataPath, '.cobblestar-download.mrpack'), { force: true }),
+  ])
+  return { ok: true as const }
+}
+
 export async function startGame(window: BrowserWindow, settings: LauncherSettings, config: GameConfig) {
   if (gameStarting || gameRunning) {
     return { ok: false as const, message: 'Minecraft est déjà en cours de lancement ou déjà ouvert.' }

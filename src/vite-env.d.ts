@@ -15,6 +15,7 @@ interface Window {
     getAccount(): Promise<{ id: string; name: string; skinUrl?: string } | null>
     getSettings(): Promise<{ memoryMb: number }>
     saveSettings(settings: { memoryMb: number }): Promise<{ memoryMb: number }>
+    repairInstallation(): Promise<{ ok: true } | { ok: false; message: string }>
     startGame(): Promise<
       | { ok: true }
       | { ok: false; code?: string; message: string }
