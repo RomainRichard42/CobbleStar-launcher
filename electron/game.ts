@@ -222,6 +222,38 @@ async function stopYosbrFromManagingGuiScale(gamePath: string) {
   }
 }
 
+async function ensureMinecraftOption(optionsPath: string, key: string, value: string) {
+  let options: string
+  try {
+    options = await fs.readFile(optionsPath, 'utf8')
+  } catch {
+    return
+  }
+
+  const newline = options.includes('\r\n') ? '\r\n' : '\n'
+  const lines = options.split(/\r?\n/)
+  const prefix = `${key}:`
+  const index = lines.findIndex((line) => line.startsWith(prefix))
+  const expected = `${prefix}${value}`
+
+  if (index >= 0) {
+    if (lines[index] === expected) return
+    lines[index] = expected
+  } else {
+    const trailingEmptyLine = lines.at(-1) === ''
+    lines.splice(trailingEmptyLine ? lines.length - 1 : lines.length, 0, expected)
+  }
+  await fs.writeFile(optionsPath, lines.join(newline), 'utf8')
+}
+
+/** Le fond FancyMenu doit rester net, y compris sur les profils existants. */
+async function ensureSharpMainMenu(gamePath: string) {
+  await Promise.all([
+    ensureMinecraftOption(path.join(gamePath, 'options.txt'), 'menuBackgroundBlurriness', '0'),
+    ensureMinecraftOption(path.join(gamePath, 'config', 'yosbr', 'options.txt'), 'menuBackgroundBlurriness', '0'),
+  ])
+}
+
 /**
  * Le .mrpack installe bien le pack CobbleStar, mais YOSBR ne recopie ses
  * options que pour un profil vierge. On complète donc uniquement la ligne des
@@ -422,6 +454,7 @@ export async function startGame(window: BrowserWindow, settings: LauncherSetting
     const fabricVersion = await ensureMinecraft(window, dataPath, config)
     await syncModpack(window, dataPath, config)
     await stopYosbrFromManagingGuiScale(dataPath)
+    await ensureSharpMainMenu(dataPath)
     await ensureRequiredResourcePacks(dataPath)
 
     report(window, { state: 'preparing', phase: 'Démarrage de Minecraft…', progress: 94 })
