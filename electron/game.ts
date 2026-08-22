@@ -198,7 +198,6 @@ const REQUIRED_RESOURCE_PACKS = [
   'file/E19 Cobblemon Minimap Icons.zip',
   'file/PackPackStar.zip',
   'file/NouveauTags.zip',
-  'file/CobbleStar Ressource Pack.zip',
 ]
 
 /**
@@ -304,10 +303,9 @@ async function reserveCobbleStarMenuKey(gamePath: string) {
 }
 
 /**
- * Le .mrpack installe bien le pack CobbleStar, mais YOSBR ne recopie ses
- * options que pour un profil vierge. On complète donc uniquement la ligne des
- * packs actifs, sans remplacer les réglages vidéo, audio ou les autres packs
- * choisis par le joueur.
+ * YOSBR ne recopie ses options que pour un profil vierge. On conserve les
+ * packs internes de Minecraft et des mods, mais les seuls packs de fichiers
+ * activés doivent être les trois packs CobbleStar demandés.
  */
 async function ensureResourcePacksInFile(optionsPath: string) {
   let options: string
@@ -322,14 +320,27 @@ async function ensureResourcePacksInFile(optionsPath: string) {
   const index = lines.findIndex((line) => line.startsWith('resourcePacks:['))
   if (index < 0) return
 
-  const missing = REQUIRED_RESOURCE_PACKS.filter((pack) => !lines[index].includes(`"${pack}"`))
-  if (!missing.length) return
-
+  const openingBracket = lines[index].indexOf('[')
   const closingBracket = lines[index].lastIndexOf(']')
-  if (closingBracket < 0) return
-  const prefix = lines[index].slice(0, closingBracket)
-  const separator = prefix.endsWith('[') ? '' : ','
-  lines[index] = `${prefix}${separator}${missing.map((pack) => `"${pack}"`).join(',')}]${lines[index].slice(closingBracket + 1)}`
+  if (openingBracket < 0 || closingBracket < openingBracket) return
+
+  let configuredPacks: unknown
+  try {
+    configuredPacks = JSON.parse(lines[index].slice(openingBracket, closingBracket + 1))
+  } catch {
+    return
+  }
+  if (!Array.isArray(configuredPacks)) return
+
+  const internalPacks = configuredPacks.filter((pack): pack is string =>
+    typeof pack === 'string'
+      && !pack.startsWith('file/')
+      && !pack.startsWith('openloader/'))
+  const exactPacks = [...new Set([...internalPacks, ...REQUIRED_RESOURCE_PACKS])]
+  const expected = `resourcePacks:${JSON.stringify(exactPacks)}${lines[index].slice(closingBracket + 1)}`
+  if (lines[index] === expected) return
+
+  lines[index] = expected
   await fs.writeFile(optionsPath, lines.join(newline), 'utf8')
 }
 
