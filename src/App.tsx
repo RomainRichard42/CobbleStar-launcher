@@ -140,7 +140,7 @@ export function App() {
 
     <header className="titlebar">
       <div className="window-brand"><img src={logo} alt=""/><strong>COBBLESTAR</strong><i/><small>LAUNCHER</small></div>
-      <div className="channel"><i/> CANAL STABLE <b>{updateStatus?.state === 'current' ? `v${updateStatus.version}` : 'v0.7.1'}</b></div>
+      <div className="channel"><i/> CANAL STABLE <b>{updateStatus?.state === 'current' ? `v${updateStatus.version}` : 'v0.7.2'}</b></div>
       <div className="window-actions"><button aria-label="Réduire" onClick={() => window.cobblestar?.minimize()}><Minus/></button><button aria-label="Fermer" onClick={() => window.cobblestar?.close()}><X/></button></div>
     </header>
 
