@@ -1,7 +1,7 @@
 {
   "name": "cobblestar-launcher",
   "private": true,
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Launcher officiel du serveur Minecraft CobbleStar",
   "license": "MIT",
   "main": "dist-electron/main.js",
