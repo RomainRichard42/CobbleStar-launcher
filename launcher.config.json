@@ -7,7 +7,7 @@
     "serverHost": "play.cobblestar-mc.fr",
     "serverPort": 25574,
     "modpackFeedUrl": "https://api.github.com/repos/RomainRichard42/CobbleStar-launcher/releases/tags/modpack-latest",
-    "modpackUrl": "https://github.com/RomainRichard42/CobbleStar-launcher/releases/download/modpack-latest/CobbleStar-1.0.25.mrpack",
-    "modpackVersion": "1.0.25"
+    "modpackUrl": "https://github.com/RomainRichard42/CobbleStar-launcher/releases/download/modpack-latest/CobbleStar-1.0.26.mrpack",
+    "modpackVersion": "1.0.26"
   }
 }
