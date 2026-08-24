@@ -14,6 +14,7 @@ import fsSync from 'node:fs'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { getMinecraftAccessToken, getMinecraftAccount, getMinecraftIdentity } from './auth.js'
+import { selectLatestModpackAsset, type ModpackAsset } from './modpack.js'
 import type { LauncherSettings } from './settings.js'
 
 export type GameConfig = {
@@ -111,11 +112,11 @@ async function resolveModpack(config: GameConfig) {
     try {
       const response = await net.fetch(config.modpackFeedUrl, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'CobbleStar-Launcher' } })
       if (!response.ok) throw new Error(`GitHub ${response.status}`)
-      const payload = await response.json() as { draft?: boolean; prerelease?: boolean; tag_name?: string; assets?: Array<{ name?: string; browser_download_url?: string; updated_at?: string }> } | Array<{ draft?: boolean; prerelease?: boolean; tag_name?: string; assets?: Array<{ name?: string; browser_download_url?: string; updated_at?: string }> }>
+      const payload = await response.json() as { draft?: boolean; prerelease?: boolean; tag_name?: string; assets?: ModpackAsset[] } | Array<{ draft?: boolean; prerelease?: boolean; tag_name?: string; assets?: ModpackAsset[] }>
       const releases = Array.isArray(payload) ? payload : [payload]
       for (const release of releases) {
         if (release.draft) continue
-        const asset = release.assets?.find((candidate) => candidate.name?.toLowerCase().endsWith('.mrpack') && candidate.browser_download_url)
+        const asset = selectLatestModpackAsset(release.assets)
         if (asset?.browser_download_url) return { url: asset.browser_download_url, version: `${release.tag_name ?? 'release'}:${asset.name}:${asset.updated_at ?? ''}` }
       }
     } catch (error) {
