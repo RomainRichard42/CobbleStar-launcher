@@ -2,6 +2,8 @@
 
 Launcher officiel CobbleStar pour Minecraft **1.21.1 Fabric**. Il affiche les actualités publiées depuis le site et synchronise automatiquement le jeu avant chaque lancement.
 
+Interface **0.8.2 — Explorateur** : [changements, tests et livrable local](docs/launcher-0.8.2-explorer.txt).
+
 ## Démarrer l’interface
 
 ```bash

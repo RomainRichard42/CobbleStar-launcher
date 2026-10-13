@@ -1,0 +1,9 @@
+Mode : imagegen intégré — extraction du décor approuvé, 13 octobre 2026.
+Référence : design/launcher-harper-blair-20261013/03-maquette-launcher-antennes.png.
+Asset : src/assets/explorer-landscape.png.
+
+Use case: precise-object-edit.
+Asset type: production background illustration for the native Electron CobbleStar launcher.
+Image 1 is the EDIT TARGET: the approved launcher composition with corrected Dragonite anatomy.
+Remove ALL user-interface overlays and text ONLY: the thin top window bar, top-left mascot/logo/wordmark, all menu buttons and icons on the left, server card, bottom Minecraft/status/Discord text and separators, top-right account chip, and the small paper specimen label near Dragonite. Reconstruct the same background underneath those overlays. The LEFT ~30% must remain the same near-black violet negative space with original subtle woodland/tree silhouettes near its right edge, ready to place live HTML controls. Restore scenery under the top-right account chip and the removed paper label.
+STRICTLY KEEP the exact existing right-hand illustration: orange smiling seated Dragonite with EXACTLY TWO cream antennae plus its tiny ORANGE central horn, turquoise wings, orange tail, same pose/size/position; layered violet mountains, moon, turquoise winding river, cubic village, gold windows, dark hanging foliage and trees. Preserve the geometric midcentury illustrated shapes, printed-paper texture, violet/turquoise/coral palette, layers crossing into the left panel. No redesign, no extra characters, no extra antenna, no interface, no words, no logos, no watermark. One clean wide full-bleed landscape, same composition/aspect ratio, no montage. Do not cut off the creature.

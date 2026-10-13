@@ -1,0 +1,61 @@
+COBBLESTAR — LAUNCHER 0.8.2 / EXPLORATEUR
+13 octobre 2026
+
+Interface
+La composition des maquettes validées est intégrée au launcher Electron : paysage violet,
+rivière turquoise, village cubique, Dracolosse à deux antennes, bouton Jouer turquoise,
+navigation à gauche et petite étiquette « Spécimen n°001 ».
+Les textes et boutons sont des contrôles React/CSS, pas des boutons peints dans une image.
+Le décor a été extrait avec imagegen intégré. Prompt : docs/explorer-art-prompt.txt.
+Asset : src/assets/explorer-landscape.png. Le logo officiel et l'icône existante restent conservés.
+
+Écrans disponibles
+Accueil connecté / sans compte, connexion Microsoft par code, compte, actualités, article,
+paramètres, assistance, confirmation de réparation, chargement initial, préparation du jeu,
+installation du modpack, jeu ouvert, téléchargement / confirmation / installation de mise
+à jour du launcher, erreurs, serveur indisponible, guides locaux, actualités vides,
+fenêtre compacte. La taille minimale reste 1040 × 680.
+
+Fonctionnement
+- Compte et skin issus de la passerelle Microsoft existante. Le visage inclut la couche du chapeau.
+- Aucun mot de passe saisi dans le launcher. Fermer la fenêtre de code ne supprime pas l'attente Microsoft.
+- Actualités publiées du site ; repli sur les guides locaux si indisponible, état vide distinct,
+  et bouton de nouvelle tentative. Les dates des guides locaux ne sont pas présentées comme des nouvelles.
+- Paramètres de mémoire réellement enregistrés. Un enregistrement échoué garde les modifications
+  comme non enregistrées. Réparation préparée pour le prochain lancement, sauvegardes conservées.
+- Progression et libellés de préparation reçus du moteur du jeu existant. Aucun téléchargement
+  simulé en production et aucun délai estimé inventé.
+- Serveur interrogé directement par le processus principal via Java Server List Ping (TCP).
+  La requête utilise l'adresse / le port configurés, une limite de 5 secondes et un cache de 30 secondes.
+  Seuls les compteurs passent dans le renderer. Un échec reste « État indisponible », pas « 0 joueur ».
+- Version du modpack affichée depuis le marqueur installé, sans utiliser la vieille version du pack
+  de secours comme si elle était forcément installée. Première installation : synchronisation automatique.
+- Mise à jour du launcher séparée du modpack. Téléchargement automatique, installation volontaire.
+  Installation sur fermeture automatique désactivée ; redémarrage interdit pendant le jeu / connexion.
+  Les réglages non enregistrés bloquent aussi le bouton de redémarrage dans l'interface.
+- Les protections de déconnexion, réparation et redémarrage sont vérifiées également dans le
+  processus principal, y compris pendant le rafraîchissement de session avant de lancer le jeu.
+
+Validation locale
+Build TypeScript / Vite / Electron réussi.
+143 assertions d'interface, 25 captures : 21 vues et variantes 1040 × 680 / 1920 × 1080.
+22 assertions TCP : réponses fragmentées, compteur zéro réel, mauvais format, fermeture et délai dépassé.
+9 contrôles Electron natifs : vrai preload, IPC, renderer compilé, assets, polices et isolation Node.
+Les tests utilisent des réponses contrôlées : leurs noms, chiffres et actualités ne sont pas
+des données de production. Une connexion Microsoft réelle et le lancement de Minecraft avec
+un vrai compte n'ont pas été exécutés pendant ces tests.
+
+Commandes de vérification
+npm run build
+npm run test:status
+npm run test:ui    (serveur Vite local sur 127.0.0.1:5187 nécessaire)
+Les tests d'interface utilisent Playwright : installation locale ou variable PLAYWRIGHT_MODULE.
+npm run test:electron
+node scripts/verify-package.mjs
+
+Captures : release/explorer-review/index.html.
+Emplacement de l'installateur local : release-0.8.2-explorer-local/.
+Publication : le tag v0.8.2 déclenche le workflow GitHub « Publier le launcher ».
+Les fichiers d'actualisation sont latest.yml, l'installateur et son blockmap (si non signé).
+Le launcher détecte et télécharge la nouvelle version au démarrage ; l'utilisateur choisit
+« Installer et redémarrer ». L'installation attend que Minecraft soit fermé.
