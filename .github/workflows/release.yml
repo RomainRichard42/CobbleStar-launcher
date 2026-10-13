@@ -39,6 +39,12 @@ jobs:
       - name: Construire l’installateur (non signé)
         run: npm run dist:win
 
+      - name: Vérifier le protocole serveur et le renderer Electron
+        run: |
+          npm run test:status
+          npm run test:electron
+          node scripts/verify-package.mjs release/win-unpacked/resources/app.asar
+
       - name: Vérifier les fichiers générés
         shell: pwsh
         run: |

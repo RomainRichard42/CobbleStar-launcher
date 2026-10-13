@@ -2,6 +2,9 @@ import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('cobblestar', {
   minimize: () => ipcRenderer.send('window:minimize'),
+  maximize: () => ipcRenderer.send('window:maximize'),
+  getInfo: () => ipcRenderer.invoke('launcher:info'),
+  getServerStatus: () => ipcRenderer.invoke('server:status'),
   close: () => ipcRenderer.send('window:close'),
   openExternal: (url: string) => ipcRenderer.invoke('external:open', url),
   getNews: () => ipcRenderer.invoke('news:get'),
@@ -13,7 +16,7 @@ contextBridge.exposeInMainWorld('cobblestar', {
   saveSettings: (settings: { memoryMb: number }) => ipcRenderer.invoke('settings:save', settings),
   repairInstallation: () => ipcRenderer.invoke('game:repair'),
   startGame: () => ipcRenderer.invoke('game:start'),
-  installUpdate: () => ipcRenderer.send('update:install'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
   onDeviceCode: (callback: (payload: unknown) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, payload: unknown) => callback(payload)
     ipcRenderer.on('auth:device-code', listener)

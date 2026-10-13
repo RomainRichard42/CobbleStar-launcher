@@ -1,7 +1,7 @@
 {
   "name": "cobblestar-launcher",
   "private": true,
-  "version": "0.7.3",
+  "version": "0.8.2",
   "description": "Launcher officiel du serveur Minecraft CobbleStar",
   "license": "MIT",
   "main": "dist-electron/main.js",
@@ -14,6 +14,9 @@
     "dist": "npm run build && electron-builder",
     "dist:win": "npm run build && electron-builder --win --x64 --publish never",
     "preview": "vite preview",
+    "test:ui": "node scripts/test-explorer.mjs",
+    "test:status": "node scripts/test-server-status.mjs",
+    "test:electron": "node scripts/run-electron-smoke.cjs",
     "postinstall": "patch-package"
   },
   "dependencies": {
@@ -58,7 +61,8 @@
       "dist-electron/**/*",
       "launcher.config.json",
       "package.json",
-      "build/icon.png"
+      "build/icon.png",
+      "src/assets/RUBIK-OFL.txt"
     ],
     "directories": {
       "buildResources": "build",

@@ -15,7 +15,7 @@ export type LauncherNews = {
 export const fallbackNews: LauncherNews[] = [
   {
     id: 'welcome', slug: 'welcome', category: 'BIENVENUE', title: 'Bienvenue sur CobbleStar',
-    excerpt: 'Le serveur est en préparation. Retrouve ici les informations utiles avant de jouer.',
+    excerpt: 'Retrouve les informations utiles pour commencer ton aventure.',
     content: 'Les actualités officielles apparaîtront automatiquement dès que le site sera disponible.',
     publishedAt: '2026-08-20T10:00:00.000Z', accent: 'cyan', image: '', published: true, featured: true,
   },

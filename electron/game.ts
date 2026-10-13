@@ -37,6 +37,8 @@ type GameStatus = {
 let gameStarting = false
 let gameRunning = false
 
+export function isGameBusy() { return gameStarting || gameRunning }
+
 function report(window: BrowserWindow, status: GameStatus) {
   if (!window.isDestroyed()) window.webContents.send('game:status', status)
 }

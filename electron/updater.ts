@@ -2,6 +2,7 @@ import { BrowserWindow } from 'electron'
 import electronUpdater from 'electron-updater'
 
 const { autoUpdater } = electronUpdater
+let readyToInstall = false
 
 export type UpdateStatus =
   | { state: 'checking' }
@@ -18,7 +19,7 @@ function send(window: BrowserWindow, status: UpdateStatus) {
 export function setupAutoUpdater(window: BrowserWindow) {
   let availableVersion = autoUpdater.currentVersion.version
   autoUpdater.autoDownload = true
-  autoUpdater.autoInstallOnAppQuit = true
+  autoUpdater.autoInstallOnAppQuit = false
 
   autoUpdater.on('checking-for-update', () => send(window, { state: 'checking' }))
   autoUpdater.on('update-available', (info) => {
@@ -31,7 +32,10 @@ export function setupAutoUpdater(window: BrowserWindow) {
     percent: Math.round(progress.percent),
   }))
   autoUpdater.on('update-not-available', (info) => send(window, { state: 'current', version: info.version }))
-  autoUpdater.on('update-downloaded', (info) => send(window, { state: 'downloaded', version: info.version }))
+  autoUpdater.on('update-downloaded', (info) => {
+    readyToInstall = true
+    send(window, { state: 'downloaded', version: info.version })
+  })
   autoUpdater.on('error', (error) => send(window, { state: 'error', message: error.message }))
 
   window.webContents.once('did-finish-load', () => {
@@ -45,9 +49,13 @@ export function setupAutoUpdater(window: BrowserWindow) {
 }
 
 export function installDownloadedUpdate() {
+  if (!readyToInstall) return false
+  readyToInstall = false
   // isSilent = true : sans ça, NSIS affiche sa propre fenêtre d'installation
   // pendant que celle du launcher reste à l'écran sans repeindre — Windows la
   // marque alors « ne répond pas ». En silencieux, la fenêtre se ferme
   // immédiatement et l'utilisateur ne voit jamais d'application figée.
-  autoUpdater.quitAndInstall(true, true)
+  // Let the IPC reply and the transition paint before the process exits.
+  setTimeout(() => autoUpdater.quitAndInstall(true, true), 500)
+  return true
 }
