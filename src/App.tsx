@@ -399,7 +399,7 @@ export function App() {
     } catch (reason) { error(reason) }
   }
   const website = info?.websiteUrl ?? 'https://cobblestar-mc.fr'
-  const discord = info?.discordUrl ?? 'https://discord.gg/Sd387Ky4M'
+  const discord = info?.discordUrl ?? 'https://discord.gg/tHugXVFrDn'
   const progressStage = /modpack/i.test(game.phase) ? 3
     : /fabric/i.test(game.phase) ? 2 : /minecraft/i.test(game.phase) && !/démarrage/i.test(game.phase) ? 1
       : /démarrage/i.test(game.phase) ? 4 : percent(game.progress) >= 74 ? 3

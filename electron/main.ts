@@ -132,7 +132,7 @@ app.whenReady().then(() => {
       serverHost: config.serverHost, serverPort: config.serverPort,
       totalMemoryMb: Math.floor(os.totalmem() / 1024 / 1024), modpackVersion: installedModpackVersion(),
       websiteUrl: getLauncherConfig().websiteUrl?.trim() || 'https://cobblestar-mc.fr',
-      discordUrl: getLauncherConfig().discordUrl?.trim() || 'https://discord.gg/Sd387Ky4M' }
+      discordUrl: getLauncherConfig().discordUrl?.trim() || 'https://discord.gg/tHugXVFrDn' }
   })
   ipcMain.handle('news:open-site', () => shell.openExternal(`${getLauncherConfig().websiteUrl?.trim() || 'https://cobblestar-mc.fr'}/actualites/`))
   ipcMain.handle('auth:login', async (event) => {

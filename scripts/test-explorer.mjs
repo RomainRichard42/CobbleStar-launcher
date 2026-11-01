@@ -83,7 +83,7 @@ try {
   ok(await page.getByText('Modifications non enregistrées').count(), 'failed save stays dirty')
   await page.evaluate(() => window.mock.failSave = false);await page.getByRole('button', { name: 'Enregistrer', exact: true }).click()
   await page.getByRole('button', { name: 'Assistance', exact: true }).click();await shot(page, '08-assistance')
-  await page.getByRole('button', { name: 'Ouvrir Discord', exact: true }).click();ok(await page.evaluate(() => window.mock.calls.some(c => c[0] === 'external' && c[1] === 'https://discord.gg/Sd387Ky4M')), 'Discord actual invite')
+  await page.getByRole('button', { name: 'Ouvrir Discord', exact: true }).click();ok(await page.evaluate(() => window.mock.calls.some(c => c[0] === 'external' && c[1] === 'https://discord.gg/tHugXVFrDn')), 'Discord actual invite')
   await page.getByRole('button', { name: 'Réparer l’installation', exact: true }).click();await shot(page, '09-reparation');await page.getByRole('button', { name: 'Annuler', exact: true }).click()
   ok(!await page.evaluate(() => window.mock.calls.includes('repair')), 'repair cancelled without mutation')
   await page.getByRole('button', { name: 'Réparer l’installation', exact: true }).click();await page.getByRole('button', { name: 'Préparer la réparation', exact: true }).click()
