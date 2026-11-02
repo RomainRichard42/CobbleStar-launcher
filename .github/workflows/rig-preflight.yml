@@ -1,0 +1,42 @@
+name: Test distant des modèles 1.1.3
+on:
+  push:
+    branches: [qa/rig-audit-113]
+permissions:
+  contents: read
+jobs:
+  client:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer les outils du client de test
+        run: |
+          pip install 'minecraft-launcher-lib==8.0'
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb xauth libgl1-mesa-dri libopenal1
+      - name: Vérifier les modèles dans un affichage virtuel et silencieux
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+          ALSOFT_DRIVERS: "null"
+        run: xvfb-run -a -s "-screen 0 1000x700x24" python .qa/verify.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bilan-modeles
+          path: |
+            /tmp/cobblestar-qa/report.json
+            /tmp/cobblestar-qa/probe-result.txt
+            /tmp/cobblestar-qa/sources.json
+            /tmp/cobblestar-qa/rig.log
+          retention-days: 2
