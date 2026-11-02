@@ -1,7 +1,7 @@
 {
   "name": "cobblestar-launcher",
   "private": true,
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "Launcher officiel du serveur Minecraft CobbleStar",
   "license": "MIT",
   "main": "dist-electron/main.js",
@@ -16,6 +16,7 @@
     "preview": "vite preview",
     "test:ui": "node scripts/test-explorer.mjs",
     "test:status": "node scripts/test-server-status.mjs",
+    "test:assets": "node --test scripts/test-asset-recovery.mjs",
     "test:electron": "node scripts/run-electron-smoke.cjs",
     "postinstall": "patch-package"
   },

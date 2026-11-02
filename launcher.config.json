@@ -5,6 +5,7 @@
   "discordUrl": "https://discord.gg/tHugXVFrDn",
   "game": {
     "minecraftVersion": "1.21.1",
+    "fabricLoaderVersion": "0.19.3",
     "serverHost": "play.cobblestar-mc.fr",
     "serverPort": 25574,
     "modpackFeedUrl": "https://api.github.com/repos/RomainRichard42/CobbleStar-launcher/releases/tags/modpack-latest",

@@ -42,6 +42,7 @@ jobs:
       - name: Vérifier le protocole serveur et le renderer Electron
         run: |
           npm run test:status
+          npm run test:assets
           npm run test:electron
           node scripts/verify-package.mjs release/win-unpacked/resources/app.asar
 

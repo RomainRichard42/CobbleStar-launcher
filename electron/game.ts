@@ -5,8 +5,9 @@ import {
   fetchJavaRuntimeManifest,
   getLoaderArtifactListFor,
   getVersionList,
-  install,
-  installDependencies,
+  installAssets,
+  installLibraries,
+  installVersion,
   installFabric,
 } from '@xmcl/installer'
 import fs from 'node:fs/promises'
@@ -15,6 +16,7 @@ import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { getMinecraftAccessToken, getMinecraftAccount, getMinecraftIdentity } from './auth.js'
 import { selectLatestModpackAsset, type ModpackAsset } from './modpack.js'
+import { installWithAssetRecovery } from './asset-recovery.js'
 import type { LauncherSettings } from './settings.js'
 
 export type GameConfig = {
@@ -472,7 +474,7 @@ async function ensureMinecraft(window: BrowserWindow, gamePath: string, config: 
     const manifest = await getVersionList()
     const version = manifest.versions.find((entry) => entry.id === config.minecraftVersion)
     if (!version) throw new Error(`Minecraft ${config.minecraftVersion} est introuvable dans le catalogue officiel.`)
-    await install(version, minecraft, { side: 'client' })
+    await installVersion(version, minecraft, { side: 'client' })
   }
 
   report(window, { state: 'preparing', phase: 'Installation et vérification de Fabric…', progress: 62 })
@@ -484,7 +486,13 @@ async function ensureMinecraft(window: BrowserWindow, gamePath: string, config: 
 
   const fabricVersion = await installFabric(requestedLoader, minecraft, { side: 'client' })
   const resolvedVersion = await Version.parse(minecraft, fabricVersion)
-  await installDependencies(resolvedVersion, { side: 'client' })
+  await installLibraries(resolvedVersion)
+  await installWithAssetRecovery(
+    minecraft,
+    () => installAssets(resolvedVersion),
+    (url, init) => net.fetch(url, init),
+    (count) => report(window, { state: 'preparing', phase: `Reprise des ressources Minecraft (${count})…`, progress: 64 }),
+  )
   return fabricVersion
 }
 
