@@ -17,6 +17,7 @@ import path from 'node:path'
 import { getMinecraftAccessToken, getMinecraftAccount, getMinecraftIdentity } from './auth.js'
 import { selectLatestModpackAsset, type ModpackAsset } from './modpack.js'
 import { installWithAssetRecovery } from './asset-recovery.js'
+import { migrateServerPackOptions } from './resource-packs.js'
 import type { LauncherSettings } from './settings.js'
 
 export type GameConfig = {
@@ -199,12 +200,6 @@ async function syncModpack(window: BrowserWindow, gamePath: string, config: Game
   await fs.writeFile(markerPath, JSON.stringify({ version: desiredVersion, files: managedFiles }, null, 2), 'utf8')
 }
 
-const REQUIRED_RESOURCE_PACKS = [
-  'file/E19 Cobblemon Minimap Icons.zip',
-  'file/PackPackStar.zip',
-  'file/NouveauTags.zip',
-]
-
 /**
  * YOSBR ne doit fournir qu'un réglage initial, jamais reprendre la main sur
  * l'échelle choisie ensuite par le joueur. Les anciens packs contenaient
@@ -315,9 +310,8 @@ async function reserveCobbleStarMenuKey(gamePath: string) {
 }
 
 /**
- * YOSBR ne recopie ses options que pour un profil vierge. On conserve les
- * packs internes de Minecraft et des mods, mais les seuls packs de fichiers
- * activés doivent être les trois packs CobbleStar demandés.
+ * Retire uniquement les trois anciens packs gérés : le serveur les envoie
+ * ensemble. Les packs personnels et les réglages du joueur sont conservés.
  */
 async function ensureResourcePacksInFile(optionsPath: string) {
   let options: string
@@ -327,33 +321,8 @@ async function ensureResourcePacksInFile(optionsPath: string) {
     return
   }
 
-  const newline = options.includes('\r\n') ? '\r\n' : '\n'
-  const lines = options.split(/\r?\n/)
-  const index = lines.findIndex((line) => line.startsWith('resourcePacks:['))
-  if (index < 0) return
-
-  const openingBracket = lines[index].indexOf('[')
-  const closingBracket = lines[index].lastIndexOf(']')
-  if (openingBracket < 0 || closingBracket < openingBracket) return
-
-  let configuredPacks: unknown
-  try {
-    configuredPacks = JSON.parse(lines[index].slice(openingBracket, closingBracket + 1))
-  } catch {
-    return
-  }
-  if (!Array.isArray(configuredPacks)) return
-
-  const internalPacks = configuredPacks.filter((pack): pack is string =>
-    typeof pack === 'string'
-      && !pack.startsWith('file/')
-      && !pack.startsWith('openloader/'))
-  const exactPacks = [...new Set([...internalPacks, ...REQUIRED_RESOURCE_PACKS])]
-  const expected = `resourcePacks:${JSON.stringify(exactPacks)}${lines[index].slice(closingBracket + 1)}`
-  if (lines[index] === expected) return
-
-  lines[index] = expected
-  await fs.writeFile(optionsPath, lines.join(newline), 'utf8')
+  const migrated = migrateServerPackOptions(options)
+  if (migrated !== options) await fs.writeFile(optionsPath, migrated, 'utf8')
 }
 
 async function ensureRequiredResourcePacks(gamePath: string) {

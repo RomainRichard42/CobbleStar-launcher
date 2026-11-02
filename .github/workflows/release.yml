@@ -43,6 +43,7 @@ jobs:
         run: |
           npm run test:status
           npm run test:assets
+          npm run test:resource-packs
           npm run test:electron
           node scripts/verify-package.mjs release/win-unpacked/resources/app.asar
 
