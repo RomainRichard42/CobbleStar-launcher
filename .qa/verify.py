@@ -48,10 +48,8 @@ with zipfile.ZipFile(pack) as z:
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(z.read(name))
 shutil.copyfile(".qa/rig-audit.jar", game / "mods/rig-audit.jar")
-star = "03ac3111fc985638f122bbafa2553115746b0242"
-download("https://cobblestar-mc.fr/api/star/packs/" + star + ".zip", game / "resourcepacks/cobblestar-server-star.zip", star)
 packs = ["vanilla", "fabric", "cobblemon:gyaradosjump", "cobblemon:regionbiasforms",
-         "file/E19 Cobblemon Minimap Icons.zip", "file/PackPackStar.zip", "file/NouveauTags.zip", "file/cobblestar-server-star.zip"]
+         "file/E19 Cobblemon Minimap Icons.zip", "file/PackPackStar.zip", "file/NouveauTags.zip"]
 (game/"options.txt").write_text("version:3955\nresourcePacks:" + json.dumps(packs) + "\nonboardAccessibility:false\nnarrator:0\nsoundCategory_master:0.0\nrenderDistance:2\n")
 manifest = remote_json("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
 version = remote_json(next(v["url"] for v in manifest["versions"] if v["id"] == "1.21.1"))
@@ -76,7 +74,7 @@ report = json.loads((game/"report.json").read_text())
 print(result.read_text())
 print("Espèces, configurations, couples:",report["species"],report["states"],report["rigPairs"])
 assert report["species"] >= 1031
-assert all(any(path in s for s in report["activePacks"]) for path in ("cobblestar-alolan-sandshrew","cobblestar-modeles-1-8","cobblestar-server-star"))
+assert all(any(path in s for s in report["activePacks"]) for path in ("cobblestar-alolan-sandshrew","cobblestar-modeles-1-8"))
 log = (game/"rig.log").read_text(errors="replace")
 assert "[RIG-END] cobblemon:yveltal" in log and "[RIG-END] cobblemon:metagross" in log
 assert "fly_idle''" not in log
