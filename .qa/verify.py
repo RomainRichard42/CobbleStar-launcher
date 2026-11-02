@@ -81,4 +81,4 @@ assert "fly_idle''" not in log
 assert not any("T-posing!" in l and "animation.metagross.ground_idle" in l for l in log.splitlines())
 for issue in report["issues"]:
     print(issue["kind"], issue["species"], issue["aspects"], issue["detail"][:120])
-assert not any(i["kind"] in ("CRASH","FALLBACK","TEXTURE_ERROR","TEXTURE") for i in report["issues"])
+assert report["issues"] == [], "Le contrôle contient encore des ressources visuelles en échec."
