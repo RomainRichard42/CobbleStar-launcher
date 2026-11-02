@@ -1,0 +1,8 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "fr.cobblestar.clientcompat",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["YveltalPoseMixin"],
+  "injectors": {"defaultRequire": 1}
+}
