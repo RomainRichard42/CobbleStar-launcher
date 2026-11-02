@@ -1,0 +1,28 @@
+gradle.projectsEvaluated {
+    def project = gradle.rootProject
+    def sources = new File(System.getenv("COBBLESTAR_COMPAT_SOURCE"))
+    def target = new File(System.getenv("COBBLESTAR_COMPAT_OUTPUT"))
+    def compile = project.tasks.register("compilePackCompatibility", JavaCompile) {
+        source project.fileTree(sources) { include "*.java" }
+        classpath = project.sourceSets.client.compileClasspath + project.sourceSets.main.compileClasspath
+        destinationDirectory = project.layout.buildDirectory.dir("tmp/pack-client-compatibility")
+        options.encoding = "UTF-8"
+        options.release = 21
+        options.compilerArgs += ["-proc:none"]
+    }
+    def archive = project.tasks.register("packCompatibilityNamedJar", Jar) {
+        dependsOn compile
+        archiveFileName.set("pack-client-compatibility-named.jar")
+        destinationDirectory.set(target)
+        from(compile.flatMap { it.destinationDirectory })
+        from(sources) { include "*.json", "assets/**" }
+    }
+    def remapType = project.tasks.named("remapJar").get().class.superclass
+    project.tasks.register("remapPackCompatibility", remapType) {
+        dependsOn archive
+        inputFile.set(archive.flatMap { it.archiveFile })
+        archiveFileName.set("cobblestar-pose-compat-1.0.0.jar")
+        destinationDirectory.set(target)
+        addNestedDependencies.set(false)
+    }
+}
