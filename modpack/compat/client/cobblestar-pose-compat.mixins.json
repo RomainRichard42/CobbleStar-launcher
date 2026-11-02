@@ -3,6 +3,6 @@
   "minVersion": "0.8",
   "package": "fr.cobblestar.clientcompat",
   "compatibilityLevel": "JAVA_21",
-  "client": ["YveltalPoseMixin"],
+  "client": ["YveltalPoseMixin", "WindowIconMixin"],
   "injectors": {"defaultRequire": 1}
 }
