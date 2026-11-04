@@ -12,40 +12,48 @@ export type UpdateStatus =
   | { state: 'current'; version: string }
   | { state: 'error'; message: string }
 
-function send(window: BrowserWindow, status: UpdateStatus) {
-  if (!window.isDestroyed()) window.webContents.send('update:status', status)
+let latest: UpdateStatus = { state: 'checking' }
+let started = false
+
+function send(status: UpdateStatus) {
+  latest = status
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.webContents.isDestroyed()) window.webContents.send('update:status', status)
+  }
 }
 
-export function setupAutoUpdater(window: BrowserWindow) {
+/** Subscribe in the renderer first, then start the single check or replay its snapshot. */
+export function checkStartupUpdate(): UpdateStatus {
+  if (started) return latest
+  started = true
   let availableVersion = autoUpdater.currentVersion.version
   autoUpdater.autoDownload = true
   autoUpdater.autoInstallOnAppQuit = false
 
-  autoUpdater.on('checking-for-update', () => send(window, { state: 'checking' }))
+  autoUpdater.on('checking-for-update', () => send({ state: 'checking' }))
   autoUpdater.on('update-available', (info) => {
     availableVersion = info.version
-    send(window, { state: 'available', version: info.version })
+    send({ state: 'available', version: info.version })
   })
-  autoUpdater.on('download-progress', (progress) => send(window, {
+  autoUpdater.on('download-progress', (progress) => send({
     state: 'downloading',
     version: availableVersion,
     percent: Math.round(progress.percent),
   }))
-  autoUpdater.on('update-not-available', (info) => send(window, { state: 'current', version: info.version }))
+  autoUpdater.on('update-not-available', (info) => send({ state: 'current', version: info.version }))
   autoUpdater.on('update-downloaded', (info) => {
     readyToInstall = true
-    send(window, { state: 'downloaded', version: info.version })
+    send({ state: 'downloaded', version: info.version })
   })
-  autoUpdater.on('error', (error) => send(window, { state: 'error', message: error.message }))
-
-  window.webContents.once('did-finish-load', () => {
-    setTimeout(() => {
-      void autoUpdater.checkForUpdates().catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : 'Vérification de mise à jour impossible.'
-        send(window, { state: 'error', message })
-      })
-    }, 1500)
+  const failed = (error: unknown) => send({
+    state: 'error', message: error instanceof Error ? error.message : 'Vérification de mise à jour impossible.',
   })
+  autoUpdater.on('error', failed)
+  void autoUpdater.checkForUpdates().then(result => {
+    if (!result) send({ state: 'current', version: autoUpdater.currentVersion.version })
+    return result?.downloadPromise
+  }).catch(failed)
+  return latest
 }
 
 export function installDownloadedUpdate() {

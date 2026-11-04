@@ -1,0 +1,30 @@
+.startup-shell {
+  height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  place-items: center;
+  background: radial-gradient(ellipse at 50% 43%, #382740, #181326 65%);
+}
+.startup-shell > .titlebar { justify-self: stretch; }
+.startup-content {
+  width: min(340px, 85vw);
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  text-align: center;
+}
+.startup-content img { object-fit: contain; }
+.startup-content h1 { margin: 0; font-size: 38px; letter-spacing: .035em; color: #fff1d9; }
+.startup-content h1 span { color: #f4bf70; }
+.startup-content p { margin: 0; color: #efe5f3; }
+.startup-content small { color: #d8c9e1; }
+.startup-loading, .startup-progress { width: 100%; }
+.startup-loading { background: #51405f; border-radius: 4px; height: 5px; overflow: hidden; }
+.startup-loading::after {
+  content: ''; display: block; width: 38%; height: 100%; background: #f4bf70;
+  animation: startup-scan 1.5s ease-in-out infinite alternate;
+}
+.startup-progress { display: flex; gap: 12px; align-items: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.startup-content button { min-width: 190px; }
+@keyframes startup-scan { to { transform: translateX(163%); } }
+@media (prefers-reduced-motion: reduce) { .startup-loading::after { animation: none; } }

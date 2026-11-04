@@ -26,6 +26,7 @@ interface Window {
     onDeviceCode(callback: (payload: { userCode: string; verificationUri: string; message: string }) => void): () => void
     installUpdate(): Promise<{ ok: true } | { ok: false; message: string }>
     onUpdateStatus(callback: (payload: UpdateStatus) => void): () => void
+    checkStartupUpdate(): Promise<UpdateStatus>
     onGameStatus(callback: (payload: GameStatus) => void): () => void
     platform: string
   }

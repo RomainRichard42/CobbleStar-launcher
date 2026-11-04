@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('cobblestar', {
   repairInstallation: () => ipcRenderer.invoke('game:repair'),
   startGame: () => ipcRenderer.invoke('game:start'),
   installUpdate: () => ipcRenderer.invoke('update:install'),
+  checkStartupUpdate: () => ipcRenderer.invoke('update:startup'),
   onDeviceCode: (callback: (payload: unknown) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, payload: unknown) => callback(payload)
     ipcRenderer.on('auth:device-code', listener)

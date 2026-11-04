@@ -137,7 +137,23 @@ function Modal({
   )
 }
 
-export function App() {
+export function Titlebar({version}: {version?: string}) {
+  const api = window.cobblestar
+  return <header className="titlebar">
+    <span>COBBLESTAR</span><span className="title-version">{version ? `v${version}` : ''}</span>
+    <div className="window-actions">
+      <button aria-label="Réduire" onClick={() => api?.minimize()}><Minus /></button>
+      <button aria-label="Agrandir ou restaurer" onClick={() => api?.maximize()}><Maximize2 /></button>
+      <button aria-label="Fermer le launcher" onClick={() => api?.close()}><X /></button>
+    </div>
+  </header>
+}
+
+export function App({update, updatePrompt, setUpdatePrompt}: {
+  update: UpdateStatus | null
+  updatePrompt: boolean
+  setUpdatePrompt: (open: boolean) => void
+}) {
   const [view, setView] = useState<View>('home')
   const [account, setAccount] = useState<Account | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
@@ -145,13 +161,11 @@ export function App() {
   const [authDialog, setAuthDialog] = useState<AuthDialog>(null)
   const [booting, setBooting] = useState(true)
   const [installing, setInstalling] = useState(false)
-  const [updatePrompt, setUpdatePrompt] = useState(false)
   const [server, setServer] = useState<ServerStatus | { state: 'loading' }>({ state: 'loading' })
   const [game, setGame] = useState<GameStatus>({
     state: 'stopped',
     phase: 'Prêt pour une nouvelle aventure',
   })
-  const [update, setUpdate] = useState<UpdateStatus | null>(null)
   const [info, setInfo] = useState<LauncherInfo | null>(null)
   const [memory, setMemory] = useState<number>(launcherConfig.defaults.memoryMb)
   const [savedMemory, setSavedMemory] = useState<number>(
@@ -236,10 +250,6 @@ export function App() {
     const offDevice = api.onDeviceCode((payload) =>
       setAuthDialog({ mode: 'device', ...payload }),
     )
-    const offUpdate = api.onUpdateStatus(value => {
-      setUpdate(value)
-      if (value.state === 'downloaded') setUpdatePrompt(true)
-    })
     const offGame = api.onGameStatus((status) => {
       setGame(status)
       if (status.state === 'running') void api.getInfo().then(value => { if (active) setInfo(value) }).catch(() => {})
@@ -250,7 +260,6 @@ export function App() {
     return () => {
       active = false
       offDevice()
-      offUpdate()
       offGame()
     }
   }, [api])
@@ -443,15 +452,7 @@ export function App() {
 
   return (
     <main className={`launcher-shell explorer view-${view}`}>
-      <header className="titlebar">
-        <span>COBBLESTAR</span>
-        <span className="title-version">{info ? `v${info.version}` : ''}</span>
-        <div className="window-actions">
-          <button aria-label="Réduire" onClick={() => api?.minimize()}><Minus /></button>
-          <button aria-label="Agrandir ou restaurer" onClick={() => api?.maximize()}><Maximize2 /></button>
-          <button aria-label="Fermer le launcher" onClick={() => api?.close()}><X /></button>
-        </div>
-      </header>
+      <Titlebar version={info?.version} />
       <div className="explorer-world">
         <img className="landscape" src={landscape} alt="" aria-hidden="true" />
         <header className="explorer-header">

@@ -17,7 +17,16 @@ app.whenReady().then(async () => {
       { urls: ['http://*/*', 'https://*/*'] },
       (_request, done) => done({ cancel: true }),
     )
-    ipcMain.handle('auth:account', () => ({ id: 'test', name: 'DresseurTest' }))
+    let startupState = { state: 'checking' }
+    let startupRequests = 0
+    let accountRequests = 0
+    let installs = 0
+    ipcMain.handle('update:startup', () => { startupRequests++; return startupState })
+    ipcMain.handle('update:install', () => { installs++; return {ok:true} })
+    ipcMain.handle('auth:account', () => {
+      accountRequests++
+      return { id: 'test', name: 'DresseurTest' }
+    })
     ipcMain.handle('settings:get', () => ({ memoryMb: 6144 }))
     ipcMain.handle('launcher:info', () => ({
       version: '0.8.2',
@@ -42,7 +51,36 @@ app.whenReady().then(async () => {
         session: isolated,
       },
     })
-    await window.loadFile(path.join(root, 'dist', 'index.html'))
+    const load = () => window.loadFile(path.join(root, 'dist', 'index.html'))
+    async function waitFor(probe, timeout = 5000) {
+      const deadline = Date.now() + timeout
+      while (!(await probe())) {
+        if (Date.now() >= deadline) throw Error('Délai dépassé dans le test de démarrage')
+        await new Promise(resolve => setTimeout(resolve, 25))
+      }
+    }
+    const ui = code => window.webContents.executeJavaScript(code)
+    await load()
+    await waitFor(() => startupRequests > 0)
+    assert(await ui("Boolean(document.querySelector('.startup-content')) && !document.querySelector('.play-button')"))
+    assert.equal(accountRequests, 0)
+    window.webContents.send('update:status', {state:'downloading',version:'9.9.9',percent:43})
+    await waitFor(() => ui("document.querySelector('progress')?.value === 43"))
+    window.webContents.send('update:status', {state:'downloaded',version:'9.9.9'})
+    await waitFor(() => ui("Boolean(document.querySelector('.startup-content .primary'))"))
+    await ui("document.querySelector('.startup-content .primary').click()")
+    await waitFor(() => installs === 1)
+    assert.equal(accountRequests, 0)
+    startupState = { state: 'error', message: 'Hors ligne' }
+    await load()
+    await waitFor(() => ui("Boolean(document.querySelector('.play-button'))"))
+    startupState = { state: 'checking' }
+    await load()
+    await waitFor(() => ui("Boolean(document.querySelector('.startup-content'))"))
+    await waitFor(() => ui("Boolean(document.querySelector('.play-button'))"), 14000)
+    startupState = { state: 'current', version: '0.8.6' }
+    await load()
+    await waitFor(() => ui("Boolean(document.querySelector('.account-card'))"))
     const result = await window.webContents.executeJavaScript(`(async () => {
       await document.fonts.ready;
       for(let i=0;i<100 && !document.querySelector('.account-card').textContent.includes('DresseurTest');i++) await new Promise(r=>setTimeout(r,50));

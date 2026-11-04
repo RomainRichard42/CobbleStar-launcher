@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { ensureFreshSession, getMinecraftAccount, loginMicrosoft, logoutMicrosoft, restoreSession } from './auth.js'
 import { isGameBusy, prepareGameRepair, startGame, type GameConfig } from './game.js'
 import { getSettings, saveSettings } from './settings.js'
-import { installDownloadedUpdate, setupAutoUpdater } from './updater.js'
+import { checkStartupUpdate, installDownloadedUpdate } from './updater.js'
 import { queryServerStatus, type ServerStatus } from './server-status.js'
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
@@ -108,11 +108,11 @@ function createWindow() {
   if (isDev) window.loadURL('http://127.0.0.1:5173')
   else window.loadFile(path.join(currentDir, '../dist/index.html'))
 
-  if (!isDev) setupAutoUpdater(window)
   return window
 }
 
 app.whenReady().then(() => {
+  ipcMain.handle('update:startup', () => isDev ? { state: 'current', version: app.getVersion() } : checkStartupUpdate())
   ipcMain.on('window:minimize', (event) => BrowserWindow.fromWebContents(event.sender)?.minimize())
   ipcMain.on('window:maximize', (event) => {
     const window = BrowserWindow.fromWebContents(event.sender)
