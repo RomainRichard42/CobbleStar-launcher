@@ -9,7 +9,6 @@ on:
       release_tag:
         description: Tag existant à publier
         required: true
-        default: v0.6.0
 
 permissions:
   contents: write
@@ -18,14 +17,26 @@ jobs:
   windows:
     runs-on: windows-latest
     env:
-      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
       SIGNPATH_ORG_ID: ${{ vars.SIGNPATH_ORG_ID }}
       SIGNPATH_PROJECT_SLUG: ${{ vars.SIGNPATH_PROJECT_SLUG }}
       SIGNPATH_POLICY_SLUG: ${{ vars.SIGNPATH_POLICY_SLUG }}
+      WINDOWS_PUBLISHER_DN: ${{ vars.WINDOWS_PUBLISHER_DN }}
       RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
     steps:
+      - name: Exiger une identité de signature de production
+        shell: pwsh
+        env:
+          HAS_SIGNPATH_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN != '' }}
+        run: |
+          if ($env:RELEASE_TAG -cnotmatch '^v\d+\.\d+\.\d+$') { throw "Tag stable invalide" }
+          if ($env:HAS_SIGNPATH_TOKEN -ne 'true' -or !$env:SIGNPATH_ORG_ID -or !$env:SIGNPATH_PROJECT_SLUG -or !$env:SIGNPATH_POLICY_SLUG -or !$env:WINDOWS_PUBLISHER_DN) {
+            throw "Signature de production non configurée. Publication Windows arrêtée."
+          }
       - name: Récupérer le projet
         uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+          persist-credentials: false
 
       - name: Installer Node.js
         uses: actions/setup-node@v4
@@ -35,6 +46,12 @@ jobs:
 
       - name: Installer les dépendances
         run: npm ci
+
+      - name: Vérifier la version et configurer la vérification de l’éditeur dans le launcher
+        shell: pwsh
+        run: |
+          if ("v$((Get-Content -Raw package.json | ConvertFrom-Json).version)" -cne $env:RELEASE_TAG) { throw "Version différente du tag" }
+          npm pkg set "build.win.signtoolOptions.publisherName=$env:WINDOWS_PUBLISHER_DN"
 
       - name: Construire l’installateur (non signé)
         run: npm run dist:win
@@ -63,11 +80,10 @@ jobs:
           retention-days: 1
 
       - name: Signer via SignPath
-        if: ${{ env.SIGNPATH_API_TOKEN != '' && env.SIGNPATH_ORG_ID != '' && env.SIGNPATH_PROJECT_SLUG != '' && env.SIGNPATH_POLICY_SLUG != '' }}
         id: signpath
         uses: signpath/github-action-submit-signing-request@v2
         with:
-          api-token: ${{ env.SIGNPATH_API_TOKEN }}
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ env.SIGNPATH_ORG_ID }}
           project-slug: ${{ env.SIGNPATH_PROJECT_SLUG }}
           signing-policy-slug: ${{ env.SIGNPATH_POLICY_SLUG }}
@@ -76,17 +92,27 @@ jobs:
           output-artifact-directory: signed
 
       - name: Remplacer l'installateur par la version signée
-        if: ${{ steps.signpath.outcome == 'success' }}
         shell: pwsh
         run: |
-          $unsigned = Get-ChildItem "release/*.exe" | Select-Object -First 1
-          $signed = Get-ChildItem "signed/*.exe" | Select-Object -First 1
-          if (-not $signed) { throw "Aucun fichier signé reçu de SignPath" }
-          Copy-Item $signed.FullName $unsigned.FullName -Force
+          $name = "CobbleStar-Launcher-$($env:RELEASE_TAG.Substring(1))-win-x64.exe"
+          $unsigned = Get-Item -LiteralPath "release/$name"
+          $signed = Get-Item -LiteralPath "signed/$name"
+          ./scripts/verify-windows-signatures.ps1 -File $signed.FullName -Publisher $env:WINDOWS_PUBLISHER_DN
+          Copy-Item -LiteralPath $signed.FullName -Destination $unsigned.FullName -Force
           # Le blockmap (calculé sur le fichier non signé) ne correspond plus au binaire signé.
           # electron-updater bascule proprement en téléchargement complet en son absence.
           Remove-Item "release/*.exe.blockmap" -ErrorAction SilentlyContinue
           node scripts/update-latest-yml.mjs $unsigned.FullName "release/latest.yml"
+
+      - name: Vérifier une installation silencieuse sur le runner Windows
+        shell: pwsh
+        run: |
+          $installer = Get-Item -LiteralPath "release/CobbleStar-Launcher-$($env:RELEASE_TAG.Substring(1))-win-x64.exe"
+          $destination = Join-Path $env:RUNNER_TEMP "CobbleStar-installation"
+          $p = Start-Process -FilePath $installer.FullName -ArgumentList "/S /currentuser /D=$destination" -WindowStyle Hidden -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Échec de l’installation de test ($($p.ExitCode))" }
+          ./scripts/verify-windows-signatures.ps1 -Installation $destination -Publisher $env:WINDOWS_PUBLISHER_DN
+          node scripts/verify-package.mjs "$destination/resources/app.asar"
 
       - name: Générer les empreintes SHA256
         shell: pwsh

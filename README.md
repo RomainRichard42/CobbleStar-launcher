@@ -32,7 +32,7 @@ git tag v0.4.0
 git push origin v0.4.0
 ```
 
-GitHub Actions construit d’abord l’ensemble des fichiers, vérifie leur présence, puis les publie en une seule opération avec la commande officielle GitHub. La Release contient `latest.yml`, l’installateur et son fichier de mise à jour différentielle. Les launchers déjà installés la détectent au prochain démarrage.
+GitHub Actions vérifie les signatures et teste le contenu installé avant d’autoriser une publication sur le canal Windows direct. La release contient l’installateur, ses empreintes et `latest.yml`.
 
 ## Configuration
 
@@ -79,27 +79,19 @@ Les `.mrpack` sont suivis avec Git LFS car ils dépassent la limite de taille de
 
 Ne placez jamais de secret Microsoft dans le code du renderer. L’authentification et le lancement doivent rester dans le processus principal Electron.
 
-## Sécurité : pourquoi Windows/l'antivirus peut bloquer le launcher
+## Distribution Windows
 
-L'installateur n'est **pas signé numériquement** (aucun certificat de signature de code). C'est très courant pour les projets communautaires et cela déclenche deux protections automatiques, sans rapport avec un réel danger :
+### Microsoft Store
 
-- **SmartScreen** (Windows) affiche un avertissement tant que l'exécutable n'a pas accumulé assez de téléchargements auprès d'utilisateurs Windows.
-- **Certains antivirus** détectent de façon heuristique les applications Electron/NSIS non signées qui téléchargent des fichiers après l'installation (ici : Java, Minecraft, Fabric, les mods) — un comportement qui ressemble à celui d'un dropper de malware même s'il est légitime.
+Le canal Store utilise un paquet APPX x64. Microsoft signe le paquet distribué après certification et gère ses mises à jour. Le launcher installé par le Store continue de synchroniser le modpack avant de jouer.
 
-### Vérifier l'intégrité d'un installateur téléchargé
+1. Inscrire Accessidev via [le portail développeur Microsoft Store](https://storedeveloper.microsoft.com/), choisir le compte d’entreprise et terminer sa vérification.
+2. Réserver le nom du produit dans Partner Center. Copier les valeurs de la rubrique **Identité du produit** dans les variables GitHub Actions du dépôt. `STORE_IDENTITY_NAME` correspond à `Package/Identity/Name`, `STORE_PUBLISHER` à `Package/Identity/Publisher`, `STORE_PUBLISHER_DISPLAY_NAME` au nom complet de l’éditeur et `STORE_DISPLAY_NAME` au nom réservé du produit.
+3. Exécuter **Préparer le paquet Microsoft Store** sur la révision à soumettre. Transmettre le fichier APPX de l’artefact `pour-partner-center` dans la soumission Partner Center. Documenter l’usage de `runFullTrust` pour le lancement de Java et donner aux testeurs les instructions d’accès à Minecraft. Pour un premier essai privé, choisir une distribution limitée dans Partner Center.
+4. Après certification, tester une installation et une mise à jour depuis le Store avec les protections Windows actives. La version du paquet décale le premier chiffre de la version du launcher de un, car le Store exige un premier chiffre positif et réserve le quatrième chiffre.
 
-Chaque Release publie un fichier `SHA256SUMS.txt` à côté de l'installateur. Pour vérifier que le fichier téléchargé n'a pas été altéré :
+### Téléchargement direct
 
-```powershell
-Get-FileHash "CobbleStar-Launcher-<version>-win-x64.exe" -Algorithm SHA256
-```
+L’installateur GitHub 0.8.10 a été publié sans signature. Sur ce canal, toute nouvelle publication exige une configuration de signature de production et la variable `WINDOWS_PUBLISHER_DN` contenant le sujet complet du certificat approuvé. La chaîne vérifie la signature Authenticode horodatée de l’installateur, du launcher et du désinstalleur, puis vérifie les signatures des autres exécutables, DLL et modules natifs installés. Avec SignPath, signer uniquement l’enveloppe NSIS ne suffit pas à passer ces contrôles. Les empreintes de mise à jour sont calculées sur le fichier distribué.
 
-Compare le résultat avec la ligne correspondante dans `SHA256SUMS.txt` de la même Release.
-
-### Si Windows ou ton antivirus bloque l'installateur
-
-1. Vérifie d'abord que le hash correspond (voir ci-dessus).
-2. Sur l'écran SmartScreen, clique sur **Informations complémentaires** puis **Exécuter quand même**.
-3. Si un antivirus supprime le fichier, ajoute une exception ou signale le faux positif à l'éditeur de l'antivirus.
-
-Chaque nouvelle version publiée réinitialise en partie la réputation SmartScreen ; ces avertissements devraient diminuer avec le temps et le nombre de téléchargements.
+La signature fournie par Microsoft pour le Store couvre le paquet distribué par le Store. En cas de blocage Windows, conserve les protections actives et vérifie la provenance et les signatures du fichier.

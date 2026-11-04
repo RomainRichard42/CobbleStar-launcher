@@ -1,0 +1,57 @@
+name: Préparer le paquet Microsoft Store
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/store.yml
+      - scripts/build-store.mjs
+      - scripts/verify-store-package.ps1
+      - build/appx/**
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: windows-latest
+    env:
+      STORE_IDENTITY_NAME: ${{ vars.STORE_IDENTITY_NAME }}
+      STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+      STORE_PUBLISHER_DISPLAY_NAME: ${{ vars.STORE_PUBLISHER_DISPLAY_NAME }}
+      STORE_DISPLAY_NAME: ${{ vars.STORE_DISPLAY_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Construire et contrôler le paquet
+        shell: pwsh
+        run: |
+          npm run build
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          if ($env:GITHUB_EVENT_NAME -eq 'push') {
+            node scripts/build-store.mjs --check
+            $directory = 'release-store-check'
+            $identity = 'CobbleStar.PackageCheck'
+            $publisher = 'CN=PackageCheck'
+          } else {
+            node scripts/build-store.mjs
+            $directory = 'release-store'
+            $identity = $env:STORE_IDENTITY_NAME
+            $publisher = $env:STORE_PUBLISHER
+          }
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node scripts/verify-package.mjs "$directory/win-unpacked/resources/app.asar"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          ./scripts/verify-store-package.ps1 -Directory $directory -Identity $identity -Publisher $publisher
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          name: pour-partner-center
+          path: release-store/*.appx
+          if-no-files-found: error
+          retention-days: 7

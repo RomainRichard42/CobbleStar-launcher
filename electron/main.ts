@@ -112,7 +112,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
-  ipcMain.handle('update:startup', () => isDev ? { state: 'current', version: app.getVersion() } : checkStartupUpdate())
+  ipcMain.handle('update:startup', () => isDev || process.windowsStore ? { state: 'current', version: app.getVersion() } : checkStartupUpdate())
   ipcMain.on('window:minimize', (event) => BrowserWindow.fromWebContents(event.sender)?.minimize())
   ipcMain.on('window:maximize', (event) => {
     const window = BrowserWindow.fromWebContents(event.sender)
@@ -174,7 +174,7 @@ app.whenReady().then(() => {
   })
   ipcMain.handle('update:install', () => {
     if (isGameBusy() || launchPending || authPending) return { ok: false, message: 'Ferme le jeu et termine la connexion avant de redémarrer.' }
-    if (!installDownloadedUpdate()) return { ok: false, message: 'Aucune mise à jour prête à installer.' }
+    if (process.windowsStore || !installDownloadedUpdate()) return { ok: false, message: 'Aucune mise à jour prête à installer.' }
     return { ok: true }
   })
 
