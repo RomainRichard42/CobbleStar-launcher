@@ -5,7 +5,7 @@ import {
   ChevronRight,
   CircleUserRound,
   CircleHelp,
-  MessageCircle,
+  BookOpen,
   Wrench,
   Layers,
   CircleAlert,
@@ -22,14 +22,15 @@ import {
   Newspaper,
   Play,
   RotateCcw,
-  Settings,
   ShieldCheck,
   X,
 } from 'lucide-react'
 import { launcherConfig } from './config'
 import { fallbackNews, type LauncherNews } from './data/news'
 import logo from './assets/cobblestar-logo.png'
-import landscape from './assets/explorer-landscape.png'
+import landscape from './assets/spawn-poster.webp'
+import discordMark from './assets/discord-clyde.png'
+import { ServerGallery } from './ServerGallery'
 
 type View = 'home' | 'news' | 'settings' | 'help'
 type Account = { id: string; name: string; skinData?: string }
@@ -451,65 +452,39 @@ export function App({update, restart}: {
     <main className={`launcher-shell explorer view-${view}`}>
       <Titlebar version={info?.version} />
       <div className="explorer-world">
-        <img className="landscape" src={landscape} alt="" aria-hidden="true" />
         <header className="explorer-header">
           <button className="brand" aria-label="Accueil CobbleStar" onClick={() => setView('home')}>
             <img src={logo} alt="Logo CobbleStar" />
             <strong>COBBLE<span>STAR</span></strong>
           </button>
+          <nav className="desk-nav" aria-label="Navigation principale">
+            {([['home', 'Accueil'], ['news', 'Actualités'], ['settings', 'Paramètres'], ['help', 'Assistance']] as const).map(([id, label]) =>
+              <button key={id} aria-current={view === id ? 'page' : undefined} onClick={() => setView(id)}>{label}</button>)}
+          </nav>
           <button className="account-card" aria-label={account ? `Compte de ${account.name}` : 'Mon compte'}
             disabled={authenticating || booting}
             onClick={() => account ? setAccountOpen(true) : void login()}>
             <PlayerHead account={account} /><strong>{account?.name ?? 'Mon compte'}</strong><ChevronRight />
           </button>
         </header>
-        <aside className="sidebar">
-          <button className="play-button" aria-label={launchName} disabled={blocked} onClick={() => void start()}>
-            {game.state === 'running' ? <Gamepad2 /> : blocked ? <LoaderCircle className="spin" />
-              : account ? <Play fill="currentColor" /> : <span className="microsoft-mark" aria-hidden="true"><i /><i /><i /><i /></span>}
-            <span>{launchLabel}</span>{!blocked && <ArrowRight />}
-          </button>
-          {!account && !booting && <span className="login-caption">Compte Minecraft Java requis</span>}
-          <nav className="side-nav" aria-label="Navigation principale">
-            {([['news', Newspaper, 'Actualités'], ['settings', Settings, 'Paramètres'], ['help', CircleHelp, 'Assistance']] as const).map(([id, Icon, label]) => (
-              <button key={id} className={view === id ? 'active' : ''} aria-current={view === id ? 'page' : undefined} onClick={() => setView(id)}>
-                <Icon /><span>{label}</span><ChevronRight />
-              </button>
-            ))}
-          </nav>
-          <section className="server-card" aria-label="Serveur">
-            <h2>Serveur</h2>
-            <div className="server-state" aria-live="polite" title={server.state !== 'loading' ? `Consultation : ${new Date(server.checkedAt).toLocaleTimeString('fr-FR')}` : ''}>
-              {server.state === 'loading' ? <LoaderCircle className="spin" /> : <i className={`status-dot ${server.state}`} />}
-              <span>{server.state === 'online' ? `${server.players} joueur${server.players > 1 ? 's' : ''} en ligne`
-                : server.state === 'loading' ? 'Consultation du serveur…' : 'État indisponible'}</span>
-            </div>
-            <p>{info?.modpackVersion ? `Modpack installé · v${info.modpackVersion}` : 'Modpack · synchronisation auto'}</p>
-            <button className="mini-news" disabled={newsState === 'loading'} onClick={() => setView('news')}>
-              <Newspaper /><span>{newsState === 'loading' ? 'Chargement des actualités…'
-                : newsState === 'offline' ? 'Guides locaux' : orderedNews[0]
-                  ? `${date(orderedNews[0].publishedAt)} · ${orderedNews[0].title}` : 'Aucune actualité publiée'}</span><ChevronRight />
-            </button>
-          </section>
-          {update && update.state !== 'current' && update.state !== 'checking' && (
-            <section className={`update-card ${update.state === 'error' ? 'warning' : ''}`} aria-label="Mise à jour du launcher" aria-live="polite">
-              <div><Download /><strong>{update.state === 'error' ? 'Mise à jour indisponible' : 'Mise à jour du launcher'}</strong></div>
-              <p>{updateText}</p>
-              {update.state === 'downloading' && <progress aria-label="Téléchargement du launcher" max="100" value={percent(update.percent)} />}
-              {update.state === 'downloaded' && !canRestart && <p>{memory !== savedMemory ? 'Enregistre tes réglages pour permettre le redémarrage.' : 'Le launcher redémarrera à la fin de l’activité en cours.'}</p>}
-            </section>
-          )}
-        </aside>
-        <footer className="explorer-footer">
-          <div><span>Minecraft {version} · Cobblemon</span><span className="session-status" aria-live="polite">
-            {blocked && game.state !== 'running' ? <LoaderCircle className="spin" /> : <i className={`status-dot ${game.state === 'error' ? 'error' : account ? 'online' : 'unknown'}`} />}{footerStatus}
-          </span></div>
-          <button className="discord-link" onClick={() => void external(discord)}><MessageCircle />Discord</button>
-        </footer>
-        <button className="server-address" aria-label="Copier l’adresse du serveur" title="Copier l’adresse du serveur"
-          onClick={() => void copy(address, 'Adresse du serveur copiée.')}>{address}<Copy /></button>
-        {view === 'home' && <><h1 className="sr-only">{account ? `Bon retour, ${account.name}` : 'Accueil CobbleStar'}</h1>
-          <span className="specimen">Spécimen n°001</span></>}
+        <div className="desk-body">
+        {view === 'home' && <ServerGallery open={path => void external(new URL(path, website).href)} />}
+        {view === 'home' && <aside className="desk-journal" aria-label="Journal du serveur">
+          <div className="journal-top"><h2>{newsState === 'offline' ? 'Guides locaux' : 'Journal du serveur'}</h2>
+            <button className="icon-button" aria-label="Toutes les actualités" onClick={() => setView('news')}><ArrowRight /></button></div>
+          <div className="journal-list">
+            {newsState === 'loading' ? <p role="status">Chargement des actualités…</p> : orderedNews.length === 0
+              ? <p>Aucune actualité publiée.</p> : orderedNews.slice(0,3).map(item =>
+                <button key={item.id} className="journal-entry" onClick={() => setSelectedNews(item)}>
+                  <small>{newsState === 'offline' ? 'Guide' : date(item.publishedAt)}</small>
+                  <strong>{item.title}</strong><ChevronRight />
+                </button>)}
+          </div>
+          <div className="journal-links">
+            <button onClick={() => void external(new URL('/wiki/', website).href)}><BookOpen />Wiki CobbleStar<ExternalLink /></button>
+            <button onClick={() => void external(discord)}><img src={discordMark} alt="" />Discord<ExternalLink /></button>
+          </div>
+        </aside>}
         {view !== 'home' && (
           <section className="workspace" aria-label={view === 'news' ? 'Actualités' : view === 'settings' ? 'Paramètres' : 'Assistance'}>
             <header className="page-heading">
@@ -560,13 +535,44 @@ export function App({update, restart}: {
                   <small>Vérifie la connexion et les réglages du jeu.</small></span><ChevronRight /></button>
                 <div className="help-row"><HardDrive /><span><strong>Fichiers du jeu</strong><small>Prépare une réparation sans supprimer tes sauvegardes.</small></span>
                   <button className="secondary" disabled={blocked} onClick={() => setRepairConfirm(true)}>Réparer l’installation</button></div>
-                <div className="dialog-actions"><button className="primary" onClick={() => void external(discord)}><MessageCircle />Ouvrir Discord <ExternalLink /></button>
+                <div className="dialog-actions"><button className="primary" onClick={() => void external(discord)}><img className="discord-symbol" src={discordMark} alt="" />Ouvrir Discord <ExternalLink /></button>
                   <button className="secondary" onClick={() => void external(website)}>Voir le site <ExternalLink /></button></div>
                 <div className="help-meta"><span>Minecraft {version} · Java 21 · Fabric</span><span>{info ? `Launcher v${info.version}` : 'Launcher CobbleStar'}</span></div>
               </div>}
             </div>
           </section>
         )}
+        </div>
+        <footer className="explorer-footer">
+          <div className="desk-server"><span className="dock-heading">CobbleStar</span>
+            <div className="server-state" aria-live="polite" title={server.state !== 'loading' ? `Consultation : ${new Date(server.checkedAt).toLocaleTimeString('fr-FR')}` : ''}>
+              {server.state === 'loading' ? <LoaderCircle className="spin" /> : <i className={`status-dot ${server.state}`} />}
+              <span>{server.state === 'online' ? `${server.players} joueur${server.players > 1 ? 's' : ''} en ligne`
+                : server.state === 'loading' ? 'Consultation du serveur…' : 'État indisponible'}</span>
+            </div>
+        <button className="server-address" aria-label="Copier l’adresse du serveur" title="Copier l’adresse du serveur"
+          onClick={() => void copy(address, 'Adresse du serveur copiée.')}>{address}<Copy /></button>
+          </div>
+          <div className="desk-version"><strong>Minecraft Java {version}</strong>
+            <span>{info?.modpackVersion ? `Modpack v${info.modpackVersion}` : 'Synchronisation du modpack au lancement'}</span>
+          </div>
+          <div className="desk-play">
+          <button className="play-button" aria-label={launchName} disabled={blocked} onClick={() => void start()}>
+            {game.state === 'running' ? <Gamepad2 /> : blocked ? <LoaderCircle className="spin" />
+              : account ? <Play fill="currentColor" /> : <span className="microsoft-mark" aria-hidden="true"><i /><i /><i /><i /></span>}
+            <span>{launchLabel}</span>{!blocked && <ArrowRight />}
+          </button>
+          <span className="dock-status" role="status">{!account && !booting ? 'Compte Minecraft Java requis' : footerStatus}</span>
+          </div>
+        </footer>
+          {update && update.state !== 'current' && update.state !== 'checking' && (
+            <section className={`update-card ${update.state === 'error' ? 'warning' : ''}`} aria-label="Mise à jour du launcher" aria-live="polite">
+              <div><Download /><strong>{update.state === 'error' ? 'Mise à jour indisponible' : 'Mise à jour du launcher'}</strong></div>
+              <p>{updateText}</p>
+              {update.state === 'downloading' && <progress aria-label="Téléchargement du launcher" max="100" value={percent(update.percent)} />}
+              {update.state === 'downloaded' && !canRestart && <p>{memory !== savedMemory ? 'Enregistre tes réglages pour permettre le redémarrage.' : 'Le launcher redémarrera à la fin de l’activité en cours.'}</p>}
+            </section>
+          )}
         {game.state === 'preparing' && <section className="preparation-card" aria-label="Préparation du jeu" aria-live="polite">
           <h2>{progressStage >= 3 ? 'Installation du modpack' : 'Vérification du jeu'}</h2>
           <div className="progress-row"><progress aria-label="Préparation du jeu" max="100" value={percent(game.progress)} /><strong>{percent(game.progress)} %</strong></div>

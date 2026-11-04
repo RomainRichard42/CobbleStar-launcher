@@ -125,7 +125,7 @@ app.whenReady().then(async () => {
     assert.ok(result.logo > 0)
     assert.equal(result.font, true)
     assert.ok(result.server.includes('43 joueurs en ligne'))
-    assert.ok(result.art > 1000)
+    assert.ok(result.art >= 720)
     await new Promise(resolve => setTimeout(resolve, 300))
     const png = await window.webContents.capturePage()
     await fs.mkdir(path.join(root, 'release', 'explorer-review'), {
