@@ -149,10 +149,9 @@ export function Titlebar({version}: {version?: string}) {
   </header>
 }
 
-export function App({update, updatePrompt, setUpdatePrompt}: {
+export function App({update, restart}: {
   update: UpdateStatus | null
-  updatePrompt: boolean
-  setUpdatePrompt: (open: boolean) => void
+  restart: (version: string) => Promise<void>
 }) {
   const [view, setView] = useState<View>('home')
   const [account, setAccount] = useState<Account | null>(null)
@@ -160,7 +159,6 @@ export function App({update, updatePrompt, setUpdatePrompt}: {
   const [authenticating, setAuthenticating] = useState(false)
   const [authDialog, setAuthDialog] = useState<AuthDialog>(null)
   const [booting, setBooting] = useState(true)
-  const [installing, setInstalling] = useState(false)
   const [server, setServer] = useState<ServerStatus | { state: 'loading' }>({ state: 'loading' })
   const [game, setGame] = useState<GameStatus>({
     state: 'stopped',
@@ -185,7 +183,7 @@ export function App({update, updatePrompt, setUpdatePrompt}: {
   const authLock = useRef(false)
   const api = window.cobblestar
   const busy = game.state === 'preparing' || game.state === 'running'
-  const blocked = busy || authenticating || repairing || installing || booting
+  const blocked = busy || authenticating || repairing || booting
   const address = `${info?.serverHost ?? launcherConfig.server.host}:${info?.serverPort ?? launcherConfig.server.port}`
   const version = info?.minecraftVersion ?? launcherConfig.minecraftVersion
   const maxMemory = Math.max(
@@ -274,7 +272,7 @@ export function App({update, updatePrompt, setUpdatePrompt}: {
       return error(
         'Ouvre l’application CobbleStar pour connecter ton compte Microsoft.',
       )
-    if (authLock.current || busy || repairing || installing || booting) return
+    if (authLock.current || busy || repairing || booting) return
     authLock.current = true
     setAuthenticating(true)
     try {
@@ -327,7 +325,7 @@ export function App({update, updatePrompt, setUpdatePrompt}: {
       return error(
         'Les réglages sont enregistrés dans l’application CobbleStar.',
       )
-    if (saving || booting || installing || memory === savedMemory) return
+    if (saving || booting || memory === savedMemory) return
     setSaving(true)
     try {
       const result = await api.saveSettings({ memoryMb: memory })
@@ -398,15 +396,14 @@ export function App({update, updatePrompt, setUpdatePrompt}: {
       setNewsState('live')
     } catch { setNews(fallbackNews); setNewsState('offline') }
   }
-  async function installUpdate() {
-    if (!api || blocked || saving || memory !== savedMemory || update?.state !== 'downloaded') return
-    try {
-      const result = await api.installUpdate()
-      if (result && !result.ok) return error(result.message)
-      setUpdatePrompt(false)
-      setInstalling(true)
-    } catch (reason) { error(reason) }
-  }
+  // A slow check can finish after home has opened. Wait for the game, login,
+  // repair, and any unsaved memory choice before restarting in that case.
+  const canRestart = !blocked && !saving && memory === savedMemory
+  useEffect(() => {
+    if (canRestart && !launchLock.current && !authLock.current && update?.state === 'downloaded') {
+      void restart(update.version)
+    }
+  }, [canRestart, update, restart])
   const website = info?.websiteUrl ?? 'https://cobblestar-mc.fr'
   const discord = info?.discordUrl ?? 'https://discord.gg/tHugXVFrDn'
   const progressStage = /modpack/i.test(game.phase) ? 3
@@ -461,7 +458,7 @@ export function App({update, updatePrompt, setUpdatePrompt}: {
             <strong>COBBLE<span>STAR</span></strong>
           </button>
           <button className="account-card" aria-label={account ? `Compte de ${account.name}` : 'Mon compte'}
-            disabled={authenticating || booting || installing}
+            disabled={authenticating || booting}
             onClick={() => account ? setAccountOpen(true) : void login()}>
             <PlayerHead account={account} /><strong>{account?.name ?? 'Mon compte'}</strong><ChevronRight />
           </button>
@@ -499,7 +496,7 @@ export function App({update, updatePrompt, setUpdatePrompt}: {
               <div><Download /><strong>{update.state === 'error' ? 'Mise à jour indisponible' : 'Mise à jour du launcher'}</strong></div>
               <p>{updateText}</p>
               {update.state === 'downloading' && <progress aria-label="Téléchargement du launcher" max="100" value={percent(update.percent)} />}
-              {update.state === 'downloaded' && <button className="text-link" onClick={() => setUpdatePrompt(true)}>Installer et redémarrer <ArrowRight /></button>}
+              {update.state === 'downloaded' && !canRestart && <p>{memory !== savedMemory ? 'Enregistre tes réglages pour permettre le redémarrage.' : 'Le launcher redémarrera à la fin de l’activité en cours.'}</p>}
             </section>
           )}
         </aside>
@@ -542,9 +539,9 @@ export function App({update, updatePrompt, setUpdatePrompt}: {
                   <div className="memory-controls"><div className="memory-slider"><output htmlFor="memory">{memory / 1024} Go</output>
                     <label className="sr-only" htmlFor="memory">Mémoire allouée</label>
                     <div className="range-row"><span>2 Go</span><input id="memory" type="range" min="2048" max={Math.max(memory, maxMemory)} step="1024" value={memory}
-                      disabled={saving || booting || installing} onChange={event => setMemory(Number(event.target.value))} /><span>{Math.max(memory, maxMemory) / 1024} Go</span></div>
+                      disabled={saving || booting} onChange={event => setMemory(Number(event.target.value))} /><span>{Math.max(memory, maxMemory) / 1024} Go</span></div>
                     <p className="hint">Laisse de la mémoire aux autres applications.</p></div>
-                    <div className="memory-save"><button className="primary" disabled={saving || booting || installing || memory === savedMemory}
+                    <div className="memory-save"><button className="primary" disabled={saving || booting || memory === savedMemory}
                       onClick={() => void save()}>{saving && <LoaderCircle className="spin" />}Enregistrer</button>
                       <span className={memory !== savedMemory ? 'unsaved' : 'saved'}>{memory !== savedMemory ? 'Modifications non enregistrées' : 'Réglages enregistrés'}</span></div></div>
                 </section>
@@ -612,14 +609,6 @@ export function App({update, updatePrompt, setUpdatePrompt}: {
             <p className="error-copy">{authDialog.message}</p><div className="dialog-actions"><button className="primary" onClick={() => setAuthDialog(null)}>J’ai compris</button>
               <button className="secondary" onClick={() => { setAuthDialog(null); setView('help') }}>Assistance</button></div></>}
       </Modal>}
-      {updatePrompt && update?.state === 'downloaded' && !authDialog && !accountOpen && !repairConfirm && !selectedNews && <Modal title="Mise à jour prête" close={() => setUpdatePrompt(false)}>
-        <span className="dialog-emblem"><Download /></span><h2>Mise à jour prête</h2><p>Version {update.version} · redémarre le launcher pour l’installer.</p>
-        <button className="primary full" disabled={blocked || saving || memory !== savedMemory} onClick={() => void installUpdate()}>Installer et redémarrer</button>
-        <button className="secondary full" onClick={() => setUpdatePrompt(false)}>Plus tard</button>
-        <p className="hint">{busy ? 'Ferme Minecraft avant l’installation.' : memory !== savedMemory ? 'Enregistre tes réglages avant de redémarrer.' : 'Tes réglages et ta session seront conservés.'}</p>
-      </Modal>}
-      {installing && <div className="install-splash" role="status"><div className="splash-brand"><img src={logo} alt="" /><strong>COBBLE<span>STAR</span></strong></div>
-        <h2>Mise à jour en cours</h2><LoaderCircle className="spin" /><p>Le launcher va redémarrer.</p></div>}
       <span className="sr-only">{statusText}</span>
     </main>
   )

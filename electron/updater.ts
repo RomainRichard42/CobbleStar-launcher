@@ -3,6 +3,8 @@ import electronUpdater from 'electron-updater'
 
 const { autoUpdater } = electronUpdater
 let readyToInstall = false
+let installing = false
+export function isUpdateInstalling() { return installing }
 
 export type UpdateStatus =
   | { state: 'checking' }
@@ -42,12 +44,15 @@ export function checkStartupUpdate(): UpdateStatus {
   }))
   autoUpdater.on('update-not-available', (info) => send({ state: 'current', version: info.version }))
   autoUpdater.on('update-downloaded', (info) => {
+    if (installing) return
     readyToInstall = true
     send({ state: 'downloaded', version: info.version })
   })
-  const failed = (error: unknown) => send({
-    state: 'error', message: error instanceof Error ? error.message : 'Vérification de mise à jour impossible.',
-  })
+  const failed = (error: unknown) => {
+    installing = false
+    readyToInstall = false
+    send({state: 'error', message: error instanceof Error ? error.message : 'Mise à jour impossible.'})
+  }
   autoUpdater.on('error', failed)
   void autoUpdater.checkForUpdates().then(result => {
     if (!result) send({ state: 'current', version: autoUpdater.currentVersion.version })
@@ -57,13 +62,23 @@ export function checkStartupUpdate(): UpdateStatus {
 }
 
 export function installDownloadedUpdate() {
+  if (installing) return true
   if (!readyToInstall) return false
   readyToInstall = false
+  installing = true
   // isSilent = true : sans ça, NSIS affiche sa propre fenêtre d'installation
   // pendant que celle du launcher reste à l'écran sans repeindre — Windows la
   // marque alors « ne répond pas ». En silencieux, la fenêtre se ferme
   // immédiatement et l'utilisateur ne voit jamais d'application figée.
   // Let the IPC reply and the transition paint before the process exits.
-  setTimeout(() => autoUpdater.quitAndInstall(true, true), 500)
+  setTimeout(() => {
+    if (!installing) return
+    try {
+      autoUpdater.quitAndInstall(true, true)
+    } catch (error) {
+      installing = false
+      send({state: 'error', message: error instanceof Error ? error.message : 'Installation impossible.'})
+    }
+  }, 250)
   return true
 }

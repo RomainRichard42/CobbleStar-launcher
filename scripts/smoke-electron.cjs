@@ -21,8 +21,12 @@ app.whenReady().then(async () => {
     let startupRequests = 0
     let accountRequests = 0
     let installs = 0
+    let refuseInstall = false
     ipcMain.handle('update:startup', () => { startupRequests++; return startupState })
-    ipcMain.handle('update:install', () => { installs++; return {ok:true} })
+    ipcMain.handle('update:install', () => {
+      installs++
+      return refuseInstall ? {ok:false,message:'Installation simulée indisponible'} : {ok:true}
+    })
     ipcMain.handle('auth:account', () => {
       accountRequests++
       return { id: 'test', name: 'DresseurTest' }
@@ -67,10 +71,19 @@ app.whenReady().then(async () => {
     window.webContents.send('update:status', {state:'downloading',version:'9.9.9',percent:43})
     await waitFor(() => ui("document.querySelector('progress')?.value === 43"))
     window.webContents.send('update:status', {state:'downloaded',version:'9.9.9'})
-    await waitFor(() => ui("Boolean(document.querySelector('.startup-content .primary'))"))
-    await ui("document.querySelector('.startup-content .primary').click()")
     await waitFor(() => installs === 1)
+    window.webContents.send('update:status', {state:'downloaded',version:'9.9.9'})
+    await waitFor(() => ui("document.querySelector('[role=status]')?.textContent.includes('redémarrage')"))
+    assert.equal(await ui("document.querySelectorAll('.startup-content button').length"), 0)
+    assert.equal(installs, 1)
     assert.equal(accountRequests, 0)
+    // Replay a completed download at startup. A refused install returns to home.
+    startupState = { state: 'downloaded', version: '9.9.9' }
+    refuseInstall = true
+    await load()
+    await waitFor(() => ui("Boolean(document.querySelector('.play-button'))"))
+    assert.equal(installs, 2)
+    refuseInstall = false
     startupState = { state: 'error', message: 'Hors ligne' }
     await load()
     await waitFor(() => ui("Boolean(document.querySelector('.play-button'))"))

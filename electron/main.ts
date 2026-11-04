@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { ensureFreshSession, getMinecraftAccount, loginMicrosoft, logoutMicrosoft, restoreSession } from './auth.js'
 import { isGameBusy, prepareGameRepair, startGame, type GameConfig } from './game.js'
 import { getSettings, saveSettings } from './settings.js'
-import { checkStartupUpdate, installDownloadedUpdate } from './updater.js'
+import { checkStartupUpdate, installDownloadedUpdate, isUpdateInstalling } from './updater.js'
 import { queryServerStatus, type ServerStatus } from './server-status.js'
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url))
@@ -138,7 +138,7 @@ app.whenReady().then(() => {
   ipcMain.handle('auth:login', async (event) => {
     const window = BrowserWindow.fromWebContents(event.sender)
     if (!window) return { ok: false, code: 'window_missing', message: 'Fenêtre du launcher introuvable.' }
-    if (authPending || launchPending || isGameBusy()) return { ok: false, code: 'busy', message: 'Une opération est déjà en cours.' }
+    if (isUpdateInstalling() || authPending || launchPending || isGameBusy()) return { ok: false, code: 'busy', message: 'Une opération est déjà en cours.' }
     authPending = true
     try { return await loginMicrosoft(window, getMicrosoftClientId()) }
     finally { authPending = false }
@@ -159,13 +159,13 @@ app.whenReady().then(() => {
   ipcMain.handle('settings:get', () => getSettings())
   ipcMain.handle('settings:save', (_event, settings: { memoryMb?: number }) => saveSettings(settings))
   ipcMain.handle('game:repair', () => {
-    if (isGameBusy() || launchPending || authPending) return { ok: false, message: 'Termine l’opération en cours avant de réparer.' }
+    if (isUpdateInstalling() || isGameBusy() || launchPending || authPending) return { ok: false, message: 'Termine l’opération en cours avant de réparer.' }
     return prepareGameRepair()
   })
   ipcMain.handle('game:start', async (event) => {
     const window = BrowserWindow.fromWebContents(event.sender)
     if (!window) return { ok: false, code: 'window_missing', message: 'Fenêtre du launcher introuvable.' }
-    if (launchPending || authPending || isGameBusy()) return { ok: false, code: 'busy', message: 'Une opération est déjà en cours.' }
+    if (isUpdateInstalling() || launchPending || authPending || isGameBusy()) return { ok: false, code: 'busy', message: 'Une opération est déjà en cours.' }
     launchPending = true
     try {
       await ensureFreshSession(getMicrosoftClientId())
