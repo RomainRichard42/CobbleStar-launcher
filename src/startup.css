@@ -1,30 +1,75 @@
+@font-face {
+  font-family: 'CobbleStar Display';
+  src: url('./assets/barlow-condensed-800.ttf') format('truetype');
+  font-weight: 800;
+  font-display: swap;
+}
 .startup-shell {
+  --ivory: #fff1d9;
+  --gold: #f3c478;
   height: 100vh;
   display: grid;
-  grid-template-rows: auto 1fr;
-  place-items: center;
-  background: radial-gradient(ellipse at 50% 43%, #382740, #181326 65%);
+  grid-template-rows: auto minmax(0, 1fr);
+  background: #1b1327;
+  color: var(--ivory);
 }
-.startup-shell > .titlebar { justify-self: stretch; }
+.startup-layout { display: grid; grid-template-columns: clamp(360px, 35%, 640px) minmax(0, 1fr); min-height: 0; }
 .startup-content {
-  width: min(340px, 85vw);
+  position: relative;
   display: grid;
-  justify-items: center;
-  gap: 14px;
-  text-align: center;
+  grid-template-rows: 1fr auto;
+  padding: clamp(32px, 4vw, 80px);
+  background: radial-gradient(ellipse at 10% 37%, #342137, transparent 65%), #1b1327;
+  border-right: 1px solid #69515d;
 }
-.startup-content img { object-fit: contain; }
-.startup-content h1 { margin: 0; font-size: 38px; letter-spacing: .035em; color: #fff1d9; }
-.startup-content h1 span { color: #f4bf70; }
-.startup-content p { margin: 0; color: #efe5f3; }
-.startup-content small { color: #d8c9e1; }
-.startup-loading, .startup-progress { width: 100%; }
-.startup-loading { background: #51405f; border-radius: 4px; height: 5px; overflow: hidden; }
-.startup-loading::after {
-  content: ''; display: block; width: 38%; height: 100%; background: #f4bf70;
-  animation: startup-scan 1.5s ease-in-out infinite alternate;
+.startup-content::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 29%; height: 2px; background: var(--gold);
 }
-.startup-progress { display: flex; gap: 12px; align-items: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.startup-content button { min-width: 190px; }
+.startup-identity { align-self: center; }
+.startup-identity img { width: clamp(88px, 9vw, 145px); height: auto; display: block; margin: 0 0 20px -6px; }
+.startup-identity h1 { font: 800 clamp(62px, 5.6vw, 110px)/.95 'CobbleStar Display', Rubik, sans-serif; letter-spacing: -.02em; margin: 0; }
+.startup-identity h1 span { color: var(--gold); }
+.startup-identity p { display: flex; align-items: center; gap: 11px; margin: 14px 0 0; font-size: clamp(17px, 1.35vw, 23px); color: #d9c8e1; }
+.startup-identity p span { color: var(--gold); font-size: .65em; }
+.startup-activity { align-self: end; min-height: 140px; }
+.startup-steps { list-style: none; display: flex; gap: 13px; padding: 0; margin: 0 0 22px; }
+.startup-steps li { position: relative; padding-top: 11px; font-size: 12px; color: #b6a5bd; }
+.startup-steps li::before { content: ''; position: absolute; top: 0; left: 0; width: 16px; height: 2px; background: #615166; }
+.startup-steps li[aria-current] { color: var(--gold); }
+.startup-steps li[aria-current]::before, .startup-steps li.done::before { background: var(--gold); }
+.startup-reading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.startup-reading p { margin: 0; font-size: clamp(17px, 1.36vw, 23px); line-height: 1.3; }
+.startup-reading b { white-space: nowrap; font: 800 32px/1 'CobbleStar Display', sans-serif; color: var(--gold); font-variant-numeric: tabular-nums; }
+.startup-reading small { font: 500 15px Rubik, sans-serif; }
+.startup-activity progress, .startup-loading { display: block; margin-top: 14px; width: 100%; height: 5px; border-radius: 2px; overflow: hidden; background: #524057; }
+.startup-activity progress::-webkit-progress-bar { background: #524057; }
+.startup-activity progress::-webkit-progress-value { background: var(--gold); }
+.startup-loading::after { content: ''; display: block; width: 38%; height: 100%; background: var(--gold); animation: startup-scan 1.5s ease-in-out infinite alternate; }
+.startup-version { display: block; margin-top: 10px; color: #d1bfd6; font-size: 13px; }
+.startup-panorama { margin: 0; position: relative; overflow: hidden; background: #252336; isolation: isolate; }
+.startup-shot, .startup-shot img, .startup-shot video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.startup-shot { animation: panorama-reveal .45s ease-out both; }
+.startup-shot img { animation: panorama-drift 6.3s ease-out both; }
+.startup-panorama::after { content: ''; position: absolute; inset: 0; background: linear-gradient(0deg, #181126d9, transparent 28%),linear-gradient(90deg,#20132938,transparent 28%); pointer-events: none; }
+.startup-panorama figcaption, .panorama-count { position: absolute; z-index: 1; bottom: clamp(28px,4vw,70px); display: flex; align-items: center; gap: 12px; color: var(--ivory); }
+.startup-panorama figcaption { left: 5%; max-width: 72%; font: 800 clamp(26px, 2.7vw, 46px)/1.1 'CobbleStar Display',sans-serif; text-shadow: 0 2px 8px #171021; }
+.panorama-rule { width: 28px; height: 3px; background: var(--gold); }
+.panorama-count { right: 5%; font: 500 13px Rubik,sans-serif; font-variant-numeric: tabular-nums; }
+.panorama-count i { width: 22px; height: 1px; background: var(--gold); }
 @keyframes startup-scan { to { transform: translateX(163%); } }
-@media (prefers-reduced-motion: reduce) { .startup-loading::after { animation: none; } }
+@keyframes panorama-reveal { from { opacity: .6; } to { opacity: 1; } }
+@keyframes panorama-drift { from { transform: scale(1.015); } to { transform: scale(1.065); } }
+@media (max-width: 720px) {
+  .startup-layout { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; }
+  .startup-panorama { grid-row: 1; }
+  .startup-content { padding: 18px 24px; gap: 18px; border: 0; }
+  .startup-identity { display: grid; grid-template-columns: 52px 1fr; column-gap: 12px; }
+  .startup-identity img { grid-row: span 2; width: 52px; margin: 0; }
+  .startup-identity h1 { font-size: 40px; }
+  .startup-identity p { font-size: 14px; margin-top: 4px; }
+  .startup-activity { min-height: 0; }
+  .startup-steps { margin-bottom: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .startup-loading::after, .startup-shot, .startup-shot img { animation: none; }
+}

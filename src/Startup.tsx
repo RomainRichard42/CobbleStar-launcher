@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { App, Titlebar } from './App'
+import { StartupPanorama } from './StartupPanorama'
 import logo from './assets/cobblestar-logo.png'
 import './startup.css'
 
@@ -70,14 +71,31 @@ export function Startup() {
     : downloading ? 'Téléchargement de la mise à jour…' : 'Recherche de mises à jour…'
   return <main className="startup-shell">
     <Titlebar />
-    <section className="startup-content" aria-label="Démarrage de CobbleStar">
-      <img src={logo} alt="" width="100" height="100" />
-      <h1>COBBLE<span>STAR</span></h1>
-      <p role="status">{label}</p>
-      {progress === undefined
-        ? <span className="startup-loading" aria-hidden="true" />
-        : !ready && <div className="startup-progress"><progress max="100" value={progress} aria-label="Téléchargement du launcher" /><span>{progress} %</span></div>}
-      {(ready || downloading) && <small>Version {update.version}</small>}
-    </section>
+    <div className="startup-layout">
+      <section className="startup-content" aria-label="Démarrage de CobbleStar">
+        <div className="startup-identity">
+          <img src={logo} alt="" width="116" height="116" />
+          <h1>COBBLE<span>STAR</span></h1>
+          <p>Astéria <span aria-hidden="true">✦</span> Nébélia</p>
+        </div>
+        <div className="startup-activity">
+          <ol className="startup-steps" aria-label="Étapes de mise à jour">
+            {['Vérification', 'Téléchargement', 'Installation'].map((step, i) => {
+              const current = installing || ready ? 2 : downloading ? 1 : 0
+              return <li key={step} aria-current={current === i ? 'step' : undefined} className={i < current ? 'done' : undefined}>{step}</li>
+            })}
+          </ol>
+          <div className="startup-reading">
+            <p role="status">{label}</p>
+            {progress !== undefined && !ready && <b>{progress}<small> %</small></b>}
+          </div>
+          {progress === undefined
+            ? <span className="startup-loading" aria-hidden="true" />
+            : <progress max="100" value={progress} aria-label="Téléchargement du launcher" />}
+          {(ready || downloading) && <small className="startup-version">Version {update.version}</small>}
+        </div>
+      </section>
+      <StartupPanorama />
+    </div>
   </main>
 }

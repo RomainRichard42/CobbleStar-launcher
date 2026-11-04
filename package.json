@@ -1,7 +1,7 @@
 {
   "name": "cobblestar-launcher",
   "private": true,
-  "version": "0.8.7",
+  "version": "0.8.8",
   "description": "Launcher officiel du serveur Minecraft CobbleStar",
   "license": "MIT",
   "main": "dist-electron/main.js",
@@ -65,7 +65,8 @@
       "launcher.config.json",
       "package.json",
       "build/icon.png",
-      "src/assets/RUBIK-OFL.txt"
+      "src/assets/RUBIK-OFL.txt",
+      "src/assets/OFL-Barlow.txt"
     ],
     "directories": {
       "buildResources": "build",
