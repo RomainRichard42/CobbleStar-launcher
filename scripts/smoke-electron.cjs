@@ -115,7 +115,7 @@ app.whenReady().then(async () => {
         logo:document.querySelector('.brand img').naturalWidth,
         font:document.fonts.check('500 14px Rubik'),
         server:document.querySelector('.server-state').textContent,
-        art:document.querySelector('.landscape').naturalWidth };
+        art:document.querySelector('.league-film-frame img').naturalWidth };
     })()`)
     assert.equal(result.connected, true)
     assert.equal(result.address, 'test.invalid:25565')

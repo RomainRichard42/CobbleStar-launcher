@@ -5,7 +5,6 @@ import {
   ChevronRight,
   CircleUserRound,
   CircleHelp,
-  BookOpen,
   Wrench,
   Layers,
   CircleAlert,
@@ -31,8 +30,11 @@ import logo from './assets/cobblestar-logo.png'
 import landscape from './assets/spawn-poster.webp'
 import discordMark from './assets/discord-clyde.png'
 import { ServerGallery } from './ServerGallery'
+import { LeagueReplays, useReplayAutoplay } from './LeagueReplays'
+import { editionDate, leagueStories, type LeagueStory } from './data/league'
 
-type View = 'home' | 'news' | 'settings' | 'help'
+type View = 'home' | 'news' | 'gallery' | 'settings' | 'help'
+type JournalStory = LauncherNews | LeagueStory
 type Account = { id: string; name: string; skinData?: string }
 type AuthDialog =
   | { mode: 'device'; userCode: string; verificationUri: string }
@@ -45,8 +47,8 @@ const date = (value: string) =>
         day: 'numeric',
         month: 'short',
       }).format(new Date(value))
-const newsImage = (item: LauncherNews) =>
-  item.image?.startsWith('https://') ? item.image
+const newsImage = (item: JournalStory) =>
+  'coverUrl' in item ? item.coverUrl : item.image?.startsWith('https://') ? item.image
     : item.image?.startsWith('/') && !item.image.startsWith('//')
       ? `https://cobblestar-mc.fr${item.image}` : landscape
 const percent = (value = 0) =>
@@ -155,6 +157,7 @@ export function App({update, restart}: {
   restart: (version: string) => Promise<void>
 }) {
   const [view, setView] = useState<View>('home')
+  const [replayEnabled, setReplayEnabled] = useReplayAutoplay()
   const [account, setAccount] = useState<Account | null>(null)
   const [accountOpen, setAccountOpen] = useState(false)
   const [authenticating, setAuthenticating] = useState(false)
@@ -179,7 +182,7 @@ export function App({update, restart}: {
   const [newsState, setNewsState] = useState<'loading' | 'live' | 'offline'>(
     'loading',
   )
-  const [selectedNews, setSelectedNews] = useState<LauncherNews | null>(null)
+  const [selectedNews, setSelectedNews] = useState<JournalStory | null>(null)
   const launchLock = useRef(false)
   const authLock = useRef(false)
   const api = window.cobblestar
@@ -406,6 +409,11 @@ export function App({update, restart}: {
     }
   }, [canRestart, update, restart])
   const website = info?.websiteUrl ?? 'https://cobblestar-mc.fr'
+  const spotlight: JournalStory = newsState === 'live'
+    ? news.reduce<JournalStory>((latest, item) =>
+        Date.parse(item.publishedAt) > Date.parse('publishedAt' in latest ? latest.publishedAt : editionDate) ? item : latest, leagueStories[0])
+    : leagueStories[0]
+  const sectionName = { home: 'Accueil', gallery: 'Galerie', news: 'Actualités', settings: 'Paramètres', help: 'Assistance' }[view]
   const discord = info?.discordUrl ?? 'https://discord.gg/tHugXVFrDn'
   const progressStage = /modpack/i.test(game.phase) ? 3
     : /fabric/i.test(game.phase) ? 2 : /minecraft/i.test(game.phase) && !/démarrage/i.test(game.phase) ? 1
@@ -457,9 +465,10 @@ export function App({update, restart}: {
             <img src={logo} alt="Logo CobbleStar" />
             <strong>COBBLE<span>STAR</span></strong>
           </button>
-          <nav className="desk-nav" aria-label="Navigation principale">
-            {([['home', 'Accueil'], ['news', 'Actualités'], ['settings', 'Paramètres'], ['help', 'Assistance']] as const).map(([id, label]) =>
-              <button key={id} aria-current={view === id ? 'page' : undefined} onClick={() => setView(id)}>{label}</button>)}
+          <span className="league-brand-label">Launcher</span>
+          <nav className="league-community" aria-label="Communauté">
+            <button onClick={() => void external(website)}>Le site <ExternalLink /></button>
+            <button className="league-discord" onClick={() => void external(discord)}><img src={discordMark} alt="" />Discord <ExternalLink /></button>
           </nav>
           <button className="account-card" aria-label={account ? `Compte de ${account.name}` : 'Mon compte'}
             disabled={authenticating || booting}
@@ -468,34 +477,40 @@ export function App({update, restart}: {
           </button>
         </header>
         <div className="desk-body">
-        {view === 'home' && <ServerGallery open={path => void external(new URL(path, website).href)} />}
-        {view === 'home' && <aside className="desk-journal" aria-label="Journal du serveur">
-          <div className="journal-top"><h2>{newsState === 'offline' ? 'Guides locaux' : 'Journal du serveur'}</h2>
-            <button className="icon-button" aria-label="Toutes les actualités" onClick={() => setView('news')}><ArrowRight /></button></div>
-          <div className="journal-list">
-            {newsState === 'loading' ? <p role="status">Chargement des actualités…</p> : orderedNews.length === 0
-              ? <p>Aucune actualité publiée.</p> : orderedNews.slice(0,3).map(item =>
-                <button key={item.id} className="journal-entry" onClick={() => setSelectedNews(item)}>
-                  <small>{newsState === 'offline' ? 'Guide' : date(item.publishedAt)}</small>
-                  <strong>{item.title}</strong><ChevronRight />
-                </button>)}
-          </div>
-          <div className="journal-links">
-            <button onClick={() => void external(new URL('/wiki/', website).href)}><BookOpen />Wiki CobbleStar<ExternalLink /></button>
-            <button onClick={() => void external(discord)}><img src={discordMark} alt="" />Discord<ExternalLink /></button>
-          </div>
-        </aside>}
+        {view === 'home' && <section className="league-poster" aria-label="Affiche de ligue CobbleStar">
+          <nav className="league-menu" aria-label="Menu du launcher">
+            <small>Astéria / Nébélia</small>
+            <button className="league-play play-button" aria-label={launchName} disabled={blocked} onClick={() => void start()}>
+              <span>{!account && !blocked ? 'Jouer' : launchLabel}<b aria-hidden="true"> ›</b></span>
+            </button>
+            <button onClick={() => setView('news')}><span>Actualités</span></button>
+            <button onClick={() => void external(new URL('/wiki/', website).href)}><span>Wiki</span></button>
+            <button onClick={() => setView('gallery')}><span>Galerie</span></button>
+          </nav>
+          <img className="league-mascot" src={logo} alt="" />
+          <button className="league-note" onClick={() => setSelectedNews(spotlight)}>
+            <img src={newsImage(spotlight)} alt="" onError={event => { event.currentTarget.src = landscape }} />
+            <span><small>À la une</small><strong>{'shortTitle' in spotlight ? spotlight.shortTitle : spotlight.title}</strong></span><ArrowRight />
+          </button>
+          <LeagueReplays enabled={replayEnabled} setEnabled={setReplayEnabled}
+            suspended={busy || accountOpen || !!authDialog || !!selectedNews} />
+        </section>}
         {view !== 'home' && (
-          <section className="workspace" aria-label={view === 'news' ? 'Actualités' : view === 'settings' ? 'Paramètres' : 'Assistance'}>
+          <section className="workspace" aria-label={sectionName}>
             <header className="page-heading">
-              <h1>{view === 'news' ? 'Actualités' : view === 'settings' ? 'Paramètres' : 'Assistance'}</h1>
+              <h1>{sectionName}</h1>
               <div className="page-actions">
                 {view === 'news' && <button className="text-link" onClick={() => void external()}>Voir sur le site <ExternalLink /></button>}
                 <button className="icon-button" aria-label="Retour à l’accueil" onClick={() => setView('home')}><X /></button>
               </div>
             </header>
-            <div className="workspace-scroll">
+            <div className={view === 'gallery' ? 'league-gallery-view' : 'workspace-scroll'}>
+              {view === 'gallery' && <ServerGallery open={path => void external(new URL(path, website).href)} />}
               {view === 'news' && <div className="news-view">
+                <h2>À découvrir sur CobbleStar</h2>
+                <div className="league-stories">{leagueStories.map(item => <button key={item.slug} onClick={() => setSelectedNews(item)}>
+                  <img src={item.coverUrl} alt="" /><strong>{item.title}</strong><ArrowRight /></button>)}</div>
+                <h2>Journal du serveur</h2>
                 {newsState === 'offline' && <div className="offline-notice" role="status"><CircleAlert /><div>
                   <strong>Actualités indisponibles · guides locaux</strong><p>Les guides restent accessibles en attendant le retour du site.</p></div>
                   <button className="icon-button" aria-label="Réessayer les actualités" onClick={() => void reloadNews()}><RotateCcw /></button></div>}
@@ -524,6 +539,10 @@ export function App({update, restart}: {
                   <div><Box /><strong>Java 21 et Fabric</strong><Check /><span>Gérés automatiquement</span></div>
                   <div><Layers /><strong>Modpack</strong><Check /><span>Synchronisé avant de jouer</span></div>
                 </section>
+                <section className="panel"><label className="league-replay-setting">
+                  <input type="checkbox" checked={replayEnabled} onChange={e => setReplayEnabled(e.target.checked)} />
+                  Lire automatiquement les replays de l’accueil, sans son
+                </label></section>
                 <section className="panel repair-panel"><div><h2><Wrench />Installation</h2><p>Vérifie les fichiers du jeu au prochain lancement.</p></div>
                   <button className="secondary" disabled={blocked} onClick={() => setRepairConfirm(true)}>
                     {repairing ? 'Préparation…' : repairReady ? 'Réparation préparée' : 'Réparer l’installation'}</button></section>
@@ -544,7 +563,11 @@ export function App({update, restart}: {
         )}
         </div>
         <footer className="explorer-footer">
-          <div className="desk-server"><span className="dock-heading">CobbleStar</span>
+          <nav className="league-tools" aria-label="Outils du launcher">
+            <button onClick={() => setView('settings')} aria-current={view === 'settings' ? 'page' : undefined}>Paramètres</button>
+            <button onClick={() => setView('help')} aria-current={view === 'help' ? 'page' : undefined}>Assistance</button>
+          </nav>
+          <div className="desk-server">
             <div className="server-state" aria-live="polite" title={server.state !== 'loading' ? `Consultation : ${new Date(server.checkedAt).toLocaleTimeString('fr-FR')}` : ''}>
               {server.state === 'loading' ? <LoaderCircle className="spin" /> : <i className={`status-dot ${server.state}`} />}
               <span>{server.state === 'online' ? `${server.players} joueur${server.players > 1 ? 's' : ''} en ligne`
@@ -557,11 +580,11 @@ export function App({update, restart}: {
             <span>{info?.modpackVersion ? `Modpack v${info.modpackVersion}` : 'Synchronisation du modpack au lancement'}</span>
           </div>
           <div className="desk-play">
-          <button className="play-button" aria-label={launchName} disabled={blocked} onClick={() => void start()}>
+          {view !== 'home' && <button className="play-button" aria-label={launchName} disabled={blocked} onClick={() => void start()}>
             {game.state === 'running' ? <Gamepad2 /> : blocked ? <LoaderCircle className="spin" />
               : account ? <Play fill="currentColor" /> : <span className="microsoft-mark" aria-hidden="true"><i /><i /><i /><i /></span>}
             <span>{launchLabel}</span>{!blocked && <ArrowRight />}
-          </button>
+          </button>}
           <span className="dock-status" role="status">{!account && !booting ? 'Compte Minecraft Java requis' : footerStatus}</span>
           </div>
         </footer>
@@ -598,12 +621,13 @@ export function App({update, restart}: {
           <button className="primary" disabled={blocked || !api} onClick={() => void repair()}>Préparer la réparation</button></div>
       </Modal>}
       {selectedNews && <Modal title={selectedNews.title} wide close={() => setSelectedNews(null)}>
-        <img className="reader-cover" src={newsImage(selectedNews)} alt="" onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = landscape }} />
-        <div className="reader-copy"><span className="eyebrow">{newsState === 'offline' ? 'GUIDE LOCAL' : `${selectedNews.category} · ${date(selectedNews.publishedAt)}`}</span>
+        <img className={'guidePath' in selectedNews ? 'reader-cover league-local-cover' : 'reader-cover'} src={newsImage(selectedNews)} alt="" onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = landscape }} />
+        <div className="reader-copy"><span className="eyebrow">{'guidePath' in selectedNews ? 'Journal CobbleStar' : newsState === 'offline' ? 'Guide local' : `${selectedNews.category} · ${date(selectedNews.publishedAt)}`}</span>
           <h2>{selectedNews.title}</h2><p className="reader-lead">{selectedNews.excerpt}</p>
           {selectedNews.content.split(/\n\s*\n/).map((text, i) => <p key={i}>{text}</p>)}
-          <div className="dialog-actions"><button className="text-link" onClick={() => void external()}>Lire sur le site <ExternalLink /></button>
-            <button className="secondary" onClick={() => setSelectedNews(null)}>Retour aux actualités</button></div>
+          <div className="dialog-actions"><button className="text-link" onClick={() => void external('guidePath' in selectedNews ? new URL(selectedNews.guidePath, website).href : undefined)}>
+            {'guideLabel' in selectedNews ? selectedNews.guideLabel : 'Lire sur le site'} <ExternalLink /></button>
+            <button className="secondary" onClick={() => setSelectedNews(null)}>Fermer</button></div>
         </div></Modal>}
       {authDialog && <Modal title={authDialog.mode === 'device' ? 'Connexion Microsoft' : 'Une erreur est survenue'} close={() => setAuthDialog(null)}>
         {authDialog.mode === 'device' ? <><span className="eyebrow">CONNEXION MICROSOFT</span><h2>Connecte ton compte</h2>

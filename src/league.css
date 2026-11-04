@@ -1,0 +1,70 @@
+.explorer { --league-gold:#ffd17d; --league-cream:#fff1d9; }
+.explorer-header { gap:12px; height:clamp(55px,7vh,74px); background:#211629; }
+.league-brand-label { border-left:1px solid #76586e; padding-left:12px; color:#e3cdda; text-transform:uppercase; letter-spacing:.06em; font-size:12px; }
+.league-community,.league-tools { display:flex; align-items:center; gap:16px; }
+.league-community { margin-left:auto; }
+.league-community button,.league-tools button { display:flex; gap:8px; align-items:center; background:none; border:0; padding:6px 0; }
+.league-community button:hover,.league-tools button:hover,.league-tools [aria-current] { text-decoration:underline; text-underline-offset:4px; }
+.league-community svg { width:14px; height:14px; }
+.league-community .league-discord { padding:6px 12px; background:#473859; border:1px solid #ae9acb; border-radius:4px; }
+.league-discord img { width:25px; height:25px; object-fit:contain; filter:brightness(0) invert(1); }
+.explorer-header .account-card { margin-left:8px; }
+.view-home .desk-body { display:block; padding:0; }
+.league-poster { height:100%; display:grid; grid-template-columns:42% 58%; grid-template-rows:minmax(0,1fr) auto; grid-template-areas:'menu film' 'note film'; position:relative; isolation:isolate; container-type:size; overflow:hidden; background:radial-gradient(ellipse at 2% 1%,#783c78,transparent 49%),#48234f; }
+.league-poster::before { content:''; position:absolute; inset:0 53% 0 0; pointer-events:none; background:radial-gradient(#eac4e146 1.2px,transparent 1.5px) 0 0/7px 7px; mask-image:linear-gradient(35deg,transparent,black); }
+.league-menu { grid-area:menu; position:relative; z-index:1; align-self:center; display:flex; flex-direction:column; align-items:flex-start; gap:4px; margin-left:11%; transform:rotate(-3deg); transform-origin:left center; }
+.league-menu small,.league-film small,.league-note small { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; }
+.league-menu small { margin:0 0 8px 7px; color:#ffe6f0; }
+.league-menu button { background:none; border:0; border-radius:0; min-width:0; padding:0; min-height:0; color:var(--league-cream); text-align:left; }
+.league-menu button:hover:not(:disabled) { background:none; transform:translateX(6px); }
+.league-menu button span { display:block; background:#201329; clip-path:polygon(1% 4%,100% 0,97% 96%,0 100%); padding:1px 18px 6px 10px; font:800 clamp(28px,min(5cqw,8cqh),82px)/.98 var(--display); text-transform:uppercase; }
+.league-menu .league-play span { color:#211629; background:var(--league-gold); padding:0 28px 9px 12px; font-size:clamp(52px,min(11cqw,18cqh),165px); }
+.league-menu .league-play:disabled span { font-size:clamp(27px,4.2cqw,66px); }
+.league-play b { vertical-align:.12em; font-size:.54em; }
+.league-menu button:nth-last-child(2){margin-left:9px}
+.league-mascot { position:absolute; z-index:0; top:42%; right:61.5%; width:min(11cqw,18cqh); transform:rotate(6deg); filter:drop-shadow(2px 2px 0 #27162d); pointer-events:none; }
+.league-note { grid-area:note; justify-self:start; align-self:end; display:flex; align-items:center; gap:12px; position:relative; margin:10px 10% clamp(15px,3.5cqh,28px) 11%; max-width:79%; padding:7px 13px 7px 8px; background:#2a1831; border:1px solid #a46f99; box-shadow:3px 3px 0 #b75a81; color:var(--league-cream); border-radius:4px; text-align:left; }
+.league-note:hover { transform:translateY(-2px); box-shadow:3px 5px 0 #de829d; }
+.league-note img { width:39px; height:53px; object-fit:cover; transform:rotate(-7deg); }
+.league-note>span { min-width:0; display:grid; gap:2px; }
+.league-note small { color:#ffb0c0; font-size:11px; }
+.league-note strong { font:800 clamp(21px,2.1vw,32px)/1.03 var(--display); overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+.league-note svg { width:17px; color:#ffa8bd; flex:none; }
+.league-film,.league-film-frame { clip-path:polygon(8% 0,100% 0,100% 100%,0 100%); }
+.league-film { grid-area:film; position:relative; isolation:isolate; min-width:0; margin:0 0 0 -5%; background:var(--league-gold); }
+.league-film-frame { position:absolute; inset:0 0 0 5px; overflow:hidden; background:#443641; }
+.league-film-frame :is(video,img) { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.league-film-frame::after { content:''; position:absolute; inset:42% 0 0; background:linear-gradient(transparent,#221326ca); pointer-events:none; }
+.league-chapters { position:absolute; right:4%; top:15px; display:flex; gap:4px; }
+.league-chapters button,.league-film figcaption button { background:#24192ce8; border:1px solid #d0bfc9; border-radius:3px; color:var(--league-cream); }
+.league-chapters button { padding:6px 12px; font:800 18px/1 var(--display); }
+.league-chapters [aria-pressed=true] { background:var(--league-gold); color:#27182a; border-color:#27182a; }
+.league-film figcaption { position:absolute; bottom:5%; left:11%; right:5%; display:flex; align-items:end; justify-content:space-between; gap:8px; }
+.league-film figcaption small { display:inline-block; background:#281a31; color:#ffdea0; padding:4px 7px; }
+.league-film figcaption strong { display:block; font:800 clamp(30px,4.2vw,64px)/1.05 var(--display); color:#fff6e6; text-shadow:0 1px 4px #211329; }
+.league-film figcaption button { display:flex; gap:6px; align-items:center; padding:7px 11px; }
+.league-film figcaption svg { width:15px; height:15px; }
+.explorer-footer { gap:clamp(12px,2vw,32px); padding-block:9px; }
+.league-tools { margin-right:auto; }
+.league-tools button { font-size:14px; }
+.explorer-footer .desk-version { margin:0; }
+.view-home .explorer-footer .desk-play { border-left:1px solid var(--seam); padding-left:16px; }
+.league-gallery-view { flex:1; min-height:0; display:grid; }
+.league-stories { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:10px 0 23px; }
+.news-view>h2 { font:800 25px/1.1 var(--display); margin:8px 0 12px; }
+.league-stories button { display:flex; align-items:center; gap:12px; padding:10px; border:1px solid #72516d; background:#302236; border-radius:5px; text-align:left; }
+.league-stories button:hover { border-color:#d990a7; }
+.league-stories img { width:48px; height:62px; object-fit:contain; }
+.league-stories strong { font:800 22px/1.05 var(--display); }
+.league-stories svg { margin-left:auto; width:16px; flex:none; }
+.league-local-cover { object-fit:contain!important; background:#211629; }
+.league-replay-setting { display:flex; align-items:center; gap:10px; }
+.league-replay-setting input { width:18px; height:18px; accent-color:var(--league-gold); }
+@media(max-width:1050px) {
+  .league-community,.league-tools {gap:10px}
+  .league-stories {gap:7px}
+  .league-stories button {gap:6px}
+  .league-stories strong {font-size:18px}
+  .league-brand-label {display:none}
+}
+@media(prefers-reduced-motion:reduce) { .league-menu button:hover:not(:disabled),.league-note:hover {transform:none} }
