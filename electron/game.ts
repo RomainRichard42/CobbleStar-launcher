@@ -15,6 +15,7 @@ import fsSync from 'node:fs'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { getMinecraftAccessToken, getMinecraftAccount, getMinecraftIdentity } from './auth.js'
+import { installPackFile, packPath, removeRetiredPackFiles, replaceFile } from './pack-files.js'
 import { selectLatestModpackAsset, type ModpackAsset } from './modpack.js'
 import { installWithAssetRecovery } from './asset-recovery.js'
 import { migrateServerPackOptions } from './resource-packs.js'
@@ -84,13 +85,7 @@ type ModrinthIndex = {
   }>
 }
 
-function safeRelativePath(input: string) {
-  const normalized = input.replaceAll('\\', '/').replace(/^\/+/, '')
-  if (!normalized || normalized.split('/').includes('..')) throw new Error(`Chemin interdit dans le modpack : ${input}`)
-  return normalized
-}
-
-async function downloadFile(urls: string[], destination: string, hashes?: { sha1?: string; sha512?: string }) {
+async function fetchVerifiedFile(urls: string[], hashes?: { sha1?: string; sha512?: string }) {
   let lastError: unknown
   for (const url of urls) {
     try {
@@ -102,14 +97,12 @@ async function downloadFile(urls: string[], destination: string, hashes?: { sha1
       if (algorithm && expected && createHash(algorithm).update(buffer).digest('hex') !== expected.toLowerCase()) {
         throw new Error('La somme de contrôle ne correspond pas.')
       }
-      await fs.mkdir(path.dirname(destination), { recursive: true })
-      await fs.writeFile(destination, buffer)
-      return
+      return buffer
     } catch (error) {
       lastError = error
     }
   }
-  throw lastError instanceof Error ? lastError : new Error(`Impossible de télécharger ${destination}`)
+  throw lastError instanceof Error ? lastError : new Error('Impossible de télécharger le fichier demandé')
 }
 
 async function resolveModpack(config: GameConfig) {
@@ -151,12 +144,6 @@ async function syncModpack(window: BrowserWindow, gamePath: string, config: Game
   const archivePath = path.join(gamePath, '.cobblestar-download.mrpack')
   await fs.writeFile(archivePath, Buffer.from(await response.arrayBuffer()))
 
-  // Supprime uniquement les fichiers que la précédente version du pack avait
-  // elle-même installés. Les mondes, captures et réglages personnels restent intacts.
-  for (const previousFile of previousFiles) {
-    await fs.rm(path.join(gamePath, safeRelativePath(previousFile)), { force: true })
-  }
-
   const zip = await open(archivePath, { lazyEntries: true })
   let index: ModrinthIndex | undefined
   const managedFiles: string[] = []
@@ -171,10 +158,8 @@ async function syncModpack(window: BrowserWindow, gamePath: string, config: Game
         ? 'client-overrides/'
         : entry.fileName.startsWith('overrides/') ? 'overrides/' : undefined
       if (!prefix) continue
-      const relative = safeRelativePath(entry.fileName.slice(prefix.length))
-      const target = path.join(gamePath, relative)
-      await fs.mkdir(path.dirname(target), { recursive: true })
-      await fs.writeFile(target, await readEntry(zip, entry))
+      const relative = packPath(entry.fileName.slice(prefix.length))
+      await installPackFile(gamePath, relative, () => readEntry(zip, entry))
       managedFiles.push(relative)
     }
   } finally {
@@ -186,8 +171,8 @@ async function syncModpack(window: BrowserWindow, gamePath: string, config: Game
   const clientFiles = index.files.filter((file) => file.env?.client !== 'unsupported')
   let completed = 0
   for (const file of clientFiles) {
-    const relative = safeRelativePath(file.path)
-    await downloadFile(file.downloads, path.join(gamePath, relative), file.hashes)
+    const relative = packPath(file.path)
+    await installPackFile(gamePath, relative, () => fetchVerifiedFile(file.downloads, file.hashes))
     managedFiles.push(relative)
     completed += 1
     report(window, {
@@ -197,7 +182,8 @@ async function syncModpack(window: BrowserWindow, gamePath: string, config: Game
     })
   }
 
-  await fs.writeFile(markerPath, JSON.stringify({ version: desiredVersion, files: managedFiles }, null, 2), 'utf8')
+  await removeRetiredPackFiles(gamePath, previousFiles, managedFiles)
+  await replaceFile(markerPath, JSON.stringify({ version: desiredVersion, files: managedFiles }, null, 2))
 }
 
 /**
@@ -221,94 +207,6 @@ async function stopYosbrFromManagingGuiScale(gamePath: string) {
   }
 }
 
-async function ensureMinecraftOption(optionsPath: string, key: string, value: string) {
-  let options: string
-  try {
-    options = await fs.readFile(optionsPath, 'utf8')
-  } catch {
-    return
-  }
-
-  const newline = options.includes('\r\n') ? '\r\n' : '\n'
-  const lines = options.split(/\r?\n/)
-  const prefix = `${key}:`
-  const index = lines.findIndex((line) => line.startsWith(prefix))
-  const expected = `${prefix}${value}`
-
-  if (index >= 0) {
-    if (lines[index] === expected) return
-    lines[index] = expected
-  } else {
-    const trailingEmptyLine = lines.at(-1) === ''
-    lines.splice(trailingEmptyLine ? lines.length - 1 : lines.length, 0, expected)
-  }
-  await fs.writeFile(optionsPath, lines.join(newline), 'utf8')
-}
-
-/** Le fond FancyMenu doit rester net, y compris sur les profils existants. */
-async function ensureSharpMainMenu(gamePath: string) {
-  await Promise.all([
-    ensureMinecraftOption(path.join(gamePath, 'options.txt'), 'menuBackgroundBlurriness', '0'),
-    ensureMinecraftOption(path.join(gamePath, 'config', 'yosbr', 'options.txt'), 'menuBackgroundBlurriness', '0'),
-  ])
-}
-
-/**
- * Les identifiants GLFW suivent la position QWERTY : sur un clavier AZERTY,
- * key.keyboard.m est la touche virgule et key.keyboard.semicolon est la vraie
- * touche M. On conserve donc la virgule pour le résumé Cobblemon et on réserve
- * le M physique AZERTY au menu CobbleStar.
- */
-async function reserveCobbleStarMenuKeyInFile(optionsPath: string) {
-  let options: string
-  try {
-    options = await fs.readFile(optionsPath, 'utf8')
-  } catch {
-    return
-  }
-
-  const newline = options.includes('\r\n') ? '\r\n' : '\n'
-  const lines = options.split(/\r?\n/)
-  const menuPrefix = 'key_key.cobblestar_planets.menu:'
-  const summaryPrefix = 'key_key.cobblemon.summary:'
-  const menuIndex = lines.findIndex((line) => line.startsWith(menuPrefix))
-  const expectedMenu = `${menuPrefix}key.keyboard.semicolon`
-  let changed = false
-
-  if (menuIndex >= 0) {
-    if (lines[menuIndex] !== expectedMenu) {
-      lines[menuIndex] = expectedMenu
-      changed = true
-    }
-  } else {
-    const trailingEmptyLine = lines.at(-1) === ''
-    lines.splice(trailingEmptyLine ? lines.length - 1 : lines.length, 0, expectedMenu)
-    changed = true
-  }
-
-  const summaryIndex = lines.findIndex((line) => line.startsWith(summaryPrefix))
-  const expectedSummary = `${summaryPrefix}key.keyboard.m`
-  if (summaryIndex >= 0) {
-    if (lines[summaryIndex] !== expectedSummary) {
-      lines[summaryIndex] = expectedSummary
-      changed = true
-    }
-  } else {
-    const trailingEmptyLine = lines.at(-1) === ''
-    lines.splice(trailingEmptyLine ? lines.length - 1 : lines.length, 0, expectedSummary)
-    changed = true
-  }
-
-  if (changed) await fs.writeFile(optionsPath, lines.join(newline), 'utf8')
-}
-
-async function reserveCobbleStarMenuKey(gamePath: string) {
-  await Promise.all([
-    reserveCobbleStarMenuKeyInFile(path.join(gamePath, 'options.txt')),
-    reserveCobbleStarMenuKeyInFile(path.join(gamePath, 'config', 'yosbr', 'options.txt')),
-  ])
-}
-
 /**
  * Retire uniquement les trois anciens packs gérés : le serveur les envoie
  * ensemble. Les packs personnels et les réglages du joueur sont conservés.
@@ -322,7 +220,7 @@ async function ensureResourcePacksInFile(optionsPath: string) {
   }
 
   const migrated = migrateServerPackOptions(options)
-  if (migrated !== options) await fs.writeFile(optionsPath, migrated, 'utf8')
+  if (migrated !== options) await replaceFile(optionsPath, migrated)
 }
 
 async function ensureRequiredResourcePacks(gamePath: string) {
@@ -377,7 +275,9 @@ async function ensureJava(window: BrowserWindow, dataPath: string) {
     let lastError: unknown
     for (let attempt = 1; attempt <= JAVA_DOWNLOAD_MAX_ATTEMPTS; attempt++) {
       try {
-        await downloadFile([url], dest, { sha1 })
+        const bytes = await fetchVerifiedFile([url], { sha1 })
+        await fs.mkdir(path.dirname(dest), { recursive: true })
+        await fs.writeFile(dest, bytes)
         return
       } catch (error) {
         lastError = error
@@ -514,9 +414,7 @@ export async function startGame(window: BrowserWindow, settings: LauncherSetting
     const fabricVersion = await ensureMinecraft(window, dataPath, config)
     await syncModpack(window, dataPath, config)
     await stopYosbrFromManagingGuiScale(dataPath)
-    await ensureSharpMainMenu(dataPath)
     await ensureRequiredResourcePacks(dataPath)
-    await reserveCobbleStarMenuKey(dataPath)
 
     report(window, { state: 'preparing', phase: 'Démarrage de Minecraft…', progress: 94 })
 
