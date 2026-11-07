@@ -1,10 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Pause, Play } from 'lucide-react'
-import replay from './assets/league-replays.webm'
-import poster from './assets/league-replays.webp'
-
-const chapters = ['Au bord de l’eau', 'Prendre de la hauteur', 'Au cœur du raid']
-const chapterSeconds = 6
+import replay from './assets/spawn-travelling.webm'
+import poster from './assets/spawn-poster.webp'
 
 export function useReplayAutoplay() {
   const [override, setOverride] = useState<boolean | null>(() => {
@@ -31,8 +28,6 @@ export function LeagueReplays({ suspended, enabled, setEnabled }: {
   suspended: boolean; enabled: boolean; setEnabled: (value: boolean) => void
 }) {
   const ref = useRef<HTMLVideoElement>(null)
-  const [chapter, setChapter] = useState(0)
-  const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
   const [playing, setPlaying] = useState(false)
   useEffect(() => {
@@ -47,21 +42,17 @@ export function LeagueReplays({ suspended, enabled, setEnabled }: {
     return () => { document.removeEventListener('visibilitychange', sync); video.pause() }
   }, [enabled, suspended, failed])
 
-  return <figure className="league-film" aria-label="Replays CobbleStar">
+  return <figure className="league-film" aria-label="Panorama CobbleStar">
     <div className="league-film-frame">
       <img src={poster} alt="" />
       {!failed && <video ref={ref} src={replay} poster={poster} muted playsInline loop preload="metadata"
-        aria-label="Rencontres, montures et raid sur CobbleStar"
-        onLoadedMetadata={() => setReady(true)} onError={() => { setFailed(true); setChapter(0) }}
-        onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)}
-        onTimeUpdate={e => setChapter(Math.min(chapters.length - 1, Math.floor(e.currentTarget.currentTime / chapterSeconds)))} />}
+        aria-label="Travelling silencieux du spawn CobbleStar"
+        onError={() => setFailed(true)}
+        onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />}
     </div>
-    {!failed && <nav className="league-chapters" aria-label="Chapitres du film">
-      {chapters.map((name, i) => <button key={name} aria-label={name} title={name} aria-pressed={chapter === i} disabled={!ready}
-        onClick={() => { if (ref.current) { ref.current.currentTime = i * chapterSeconds; setChapter(i) } }}>0{i + 1}</button>)}
-    </nav>}
-    <figcaption><div><small>{failed ? 'Collection Star' : `Replays CobbleStar · 0${chapter + 1} / 03`}</small>
-      <strong>{failed ? 'Évoli Star' : chapters[chapter]}</strong></div>
+    <div className="astral-film-label"><strong>Cobblemon</strong><span>Deux mondes à explorer</span></div>
+    <figcaption><div><small>Bienvenue sur CobbleStar</small>
+      <strong>Choisis ton équipe.<br /><em>Écris ton aventure.</em></strong></div>
       {!failed && <button aria-label={playing ? 'Mettre le film en pause' : 'Lire le film'}
         onClick={() => {
           if (playing) setEnabled(false)

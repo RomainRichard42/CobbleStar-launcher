@@ -31,7 +31,7 @@ import landscape from './assets/spawn-poster.webp'
 import discordMark from './assets/discord-clyde.png'
 import { ServerGallery } from './ServerGallery'
 import { LeagueReplays, useReplayAutoplay } from './LeagueReplays'
-import { editionDate, leagueStories, type LeagueStory } from './data/league'
+import { homeHighlights, leagueStories, type LeagueStory } from './data/league'
 
 type View = 'home' | 'news' | 'gallery' | 'settings' | 'help'
 type JournalStory = LauncherNews | LeagueStory
@@ -409,10 +409,6 @@ export function App({update, restart}: {
     }
   }, [canRestart, update, restart])
   const website = info?.websiteUrl ?? 'https://cobblestar-mc.fr'
-  const spotlight: JournalStory = newsState === 'live'
-    ? news.reduce<JournalStory>((latest, item) =>
-        Date.parse(item.publishedAt) > Date.parse('publishedAt' in latest ? latest.publishedAt : editionDate) ? item : latest, leagueStories[0])
-    : leagueStories[0]
   const sectionName = { home: 'Accueil', gallery: 'Galerie', news: 'Actualités', settings: 'Paramètres', help: 'Assistance' }[view]
   const discord = info?.discordUrl ?? 'https://discord.gg/tHugXVFrDn'
   const progressStage = /modpack/i.test(game.phase) ? 3
@@ -477,24 +473,30 @@ export function App({update, restart}: {
           </button>
         </header>
         <div className="desk-body">
-        {view === 'home' && <section className="league-poster" aria-label="Affiche de ligue CobbleStar">
+        {view === 'home' && <div className="astral-home">
+        <section className="league-poster" aria-label="Accueil CobbleStar">
           <nav className="league-menu" aria-label="Menu du launcher">
             <small>Astéria / Nébélia</small>
             <button className="league-play play-button" aria-label={launchName} disabled={blocked} onClick={() => void start()}>
               <span>{!account && !blocked ? 'Jouer' : launchLabel}<b aria-hidden="true"> ›</b></span>
             </button>
             <button onClick={() => setView('news')}><span>Actualités</span></button>
-            <button onClick={() => void external(new URL('/wiki/', website).href)}><span>Wiki</span></button>
+            <button onClick={() => void external(new URL('/wiki/', website).href)}><span>Le wiki</span></button>
             <button onClick={() => setView('gallery')}><span>Galerie</span></button>
+            <p className="astral-launch-state" role="status">{!account && !booting ? 'Connecte ton compte Minecraft pour jouer.' : footerStatus}</p>
           </nav>
           <img className="league-mascot" src={logo} alt="" />
-          <button className="league-note" onClick={() => setSelectedNews(spotlight)}>
-            <img src={newsImage(spotlight)} alt="" onError={event => { event.currentTarget.src = landscape }} />
-            <span><small>À la une</small><strong>{'shortTitle' in spotlight ? spotlight.shortTitle : spotlight.title}</strong></span><ArrowRight />
-          </button>
           <LeagueReplays enabled={replayEnabled} setEnabled={setReplayEnabled}
             suspended={busy || accountOpen || !!authDialog || !!selectedNews} />
-        </section>}
+          {game.state === 'preparing' && <progress className="astral-progress" aria-label="Préparation du jeu" max="100" value={percent(game.progress)} />}
+        </section>
+        <section className="astral-journal" aria-labelledby="astral-journal-title">
+          <header><h2 id="astral-journal-title">À l’affiche</h2><button onClick={() => setView('news')}>Tout le journal <ArrowRight /></button></header>
+          <div className="astral-stories">{homeHighlights.map(({category,story}) => <button key={story.slug} className="astral-story" onClick={() => setSelectedNews(story)}>
+            <img src={story.coverUrl} alt="" /><span><small>{category}</small><strong>{story.shortTitle}</strong></span>
+          </button>)}</div>
+        </section>
+        </div>}
         {view !== 'home' && (
           <section className="workspace" aria-label={sectionName}>
             <header className="page-heading">

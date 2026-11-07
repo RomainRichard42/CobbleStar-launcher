@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+      - '!v*-*' # Test builds use a prerelease; stable builds still require the production signature.
   workflow_dispatch:
     inputs:
       release_tag:

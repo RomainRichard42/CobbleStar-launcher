@@ -4,6 +4,7 @@ import { Startup } from './Startup'
 import './explorer.css'
 import './fielddesk.css'
 import './league.css'
+import './astral.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

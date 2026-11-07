@@ -24,3 +24,19 @@ export const leagueStories = [
   },
 ]
 export type LeagueStory = (typeof leagueStories)[number]
+
+export const homeHighlights: { category: string; story: LeagueStory }[] = [
+  { category: 'OUVERTURE', story: {
+    slug: 'ouverture-decembre', shortTitle: 'Rendez-vous le 1er décembre.', coverUrl: new URL('../assets/cobblemon-team.webp', import.meta.url).href,
+    title: 'CobbleStar ouvre le 1er décembre 2026', excerpt: 'La date est fixée. Prépare ton équipe et retrouve-nous pour le début de l’aventure.',
+    content: 'CobbleStar ouvrira ses portes le 1er décembre 2026. Les prochaines annonces présenteront les nouveautés du serveur et les informations utiles pour nous rejoindre.\n\nUn système de partenariat avec des récompenses sera mis en place dans les semaines à venir. Son fonctionnement et les conditions de participation seront expliqués sur Discord.',
+    guideLabel: 'Préparer ton arrivée', guidePath: '/rejoindre/',
+  } },
+  { category: 'L’AVENTURE', story: {
+    slug: 'asteria-nebelia', shortTitle: 'Astéria & Nébélia.', coverUrl: new URL('../assets/home-tentacool.webp', import.meta.url).href,
+    title: 'Deux mondes à explorer', excerpt: 'Astéria et Nébélia, les deux mondes de CobbleStar.',
+    content: 'Explore les deux mondes de CobbleStar et découvre leurs formes régionales. Prépare tes prochaines captures avec les conditions de rencontre de notre Pokédex.\n\nTa collection, tes objectifs et tes Pokémon préférés restent accessibles depuis ton compte sur le site.',
+    guideLabel: 'Parcourir le Pokédex', guidePath: '/wiki/pokedex/',
+  } },
+  { category: 'COLLECTION', story: leagueStories[2] },
+]
