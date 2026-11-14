@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { Pause, Play } from 'lucide-react'
 import replay from './assets/spawn-travelling.webm'
-import poster from './assets/spawn-poster.webp'
+import spawn from './assets/horizons-spawn.webp'
+import nebelia from './assets/horizons-nebelia.webp'
+import pokemon from './assets/horizons-pokemon.webp'
+
+const scenes = [
+  { name: 'Spawn central', image: spawn, description: 'L’allée du spawn mène au centre de CobbleStar.' },
+  { name: 'Nébélia', image: nebelia, description: 'Un joueur explore les berges d’une rivière à Nébélia.' },
+  { name: 'Pokémon', image: pokemon, description: 'Deux Dracolosse sur la place du spawn.' },
+] as const
 
 export function useReplayAutoplay() {
   const [override, setOverride] = useState<boolean | null>(() => {
@@ -30,34 +37,44 @@ export function LeagueReplays({ suspended, enabled, setEnabled }: {
   const ref = useRef<HTMLVideoElement>(null)
   const [failed, setFailed] = useState(false)
   const [playing, setPlaying] = useState(false)
+  const [hasPlayed, setHasPlayed] = useState(false)
+  const [scene, setScene] = useState(0)
+  const current = scenes[scene]
   useEffect(() => {
     const video = ref.current
     if (!video || failed) return
     const sync = () => {
-      if (!enabled || suspended || document.hidden) video.pause()
+      if (scene !== 0 || !enabled || suspended || document.hidden) video.pause()
       else void video.play().catch(() => {})
     }
     sync()
     document.addEventListener('visibilitychange', sync)
     return () => { document.removeEventListener('visibilitychange', sync); video.pause() }
-  }, [enabled, suspended, failed])
+  }, [enabled, suspended, failed, scene])
 
-  return <figure className="league-film" aria-label="Panorama CobbleStar">
+  return <figure className="league-film" aria-label="Captures du serveur CobbleStar">
     <div className="league-film-frame">
-      <img src={poster} alt="" />
-      {!failed && <video ref={ref} src={replay} poster={poster} muted playsInline loop preload="metadata"
+      <img className={scene === 0 ? '' : 'horizons-inset'} src={current.image} alt={current.description} />
+      {!failed && <video className={scene === 0 && hasPlayed ? 'is-shown' : ''} ref={ref} src={replay} poster={spawn} muted playsInline loop preload="metadata"
         aria-label="Travelling silencieux du spawn CobbleStar"
         onError={() => setFailed(true)}
-        onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} />}
-    </div>
-    <div className="astral-film-label"><strong>Cobblemon</strong><span>Deux mondes à explorer</span></div>
-    <figcaption><div><small>Bienvenue sur CobbleStar</small>
-      <strong>Choisis ton équipe.<br /><em>Écris ton aventure.</em></strong></div>
-      {!failed && <button aria-label={playing ? 'Mettre le film en pause' : 'Lire le film'}
+        onPlaying={() => { setPlaying(true); setHasPlayed(true) }} onPause={() => setPlaying(false)} />}
+      {!failed && scene === 0 && <button className="league-film-hit-area" type="button"
+        aria-label={playing ? 'Mettre le film en pause' : 'Lire le film'} disabled={suspended}
         onClick={() => {
-          if (playing) setEnabled(false)
-          else { setEnabled(true); void ref.current?.play().catch(() => {}) }
-        }}>{playing ? <Pause /> : <Play />}{playing ? 'Pause' : 'Lire'}</button>}
-    </figcaption>
+          const video = ref.current
+          if (!video) return
+          setEnabled(video.paused)
+          if (video.paused) void video.play().catch(() => {})
+          else video.pause()
+        }} />}
+    </div>
+    <div className="astral-film-label">En jeu</div>
+    <figcaption><strong>{current.name}</strong></figcaption>
+    <div className="horizons-scenes" role="group" aria-label="Changer de vue">
+      {scenes.map((item, index) => <button key={item.name} aria-pressed={scene === index} onClick={() => setScene(index)}>
+        <img src={item.image} alt="" /><span>{item.name}</span>
+      </button>)}
+    </div>
   </figure>
 }

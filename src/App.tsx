@@ -476,16 +476,21 @@ export function App({update, restart}: {
         {view === 'home' && <div className="astral-home">
         <section className="league-poster" aria-label="Accueil CobbleStar">
           <nav className="league-menu" aria-label="Menu du launcher">
-            <small>Astéria / Nébélia</small>
+            <div className="horizons-heading">
+              <p>Minecraft Java · Cobblemon</p>
+              <h1>Deux mondes<br />à explorer</h1>
+              <span>Astéria <i aria-hidden="true" /> Nébélia</span>
+            </div>
             <button className="league-play play-button" aria-label={launchName} disabled={blocked} onClick={() => void start()}>
-              <span>{!account && !blocked ? 'Jouer' : launchLabel}<b aria-hidden="true"> ›</b></span>
+              <Play aria-hidden="true" /><span>{!account && !blocked ? 'Jouer' : launchLabel}</span><ChevronRight aria-hidden="true" />
             </button>
-            <button onClick={() => setView('news')}><span>Actualités</span></button>
-            <button onClick={() => void external(new URL('/wiki/', website).href)}><span>Le wiki</span></button>
-            <button onClick={() => setView('gallery')}><span>Galerie</span></button>
+            <div className="horizons-shortcuts">
+              <button onClick={() => setView('news')}><Newspaper /><span>Actualités</span></button>
+              <button onClick={() => void external(new URL('/wiki/', website).href)}><CircleHelp /><span>Le wiki</span></button>
+              <button onClick={() => setView('gallery')}><Layers /><span>Galerie</span></button>
+            </div>
             <p className="astral-launch-state" role="status">{!account && !booting ? 'Connecte ton compte Minecraft pour jouer.' : footerStatus}</p>
           </nav>
-          <img className="league-mascot" src={logo} alt="" />
           <LeagueReplays enabled={replayEnabled} setEnabled={setReplayEnabled}
             suspended={busy || accountOpen || !!authDialog || !!selectedNews} />
           {game.state === 'preparing' && <progress className="astral-progress" aria-label="Préparation du jeu" max="100" value={percent(game.progress)} />}

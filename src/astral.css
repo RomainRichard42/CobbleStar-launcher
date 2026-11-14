@@ -1,67 +1,124 @@
-/* Approved Édition astrale. The renderer keeps the existing authenticated IPC actions. */
-.explorer{--paper:#fff1d9;--gold:#ffd17d;--ink:#1b1225;--muted:#d6c3dd;--seam:#765875;--league-gold:#ffd17d;--league-cream:#fff1d9}
-.explorer-header{height:72px;background:#24182d;border-bottom:1px solid #614467;gap:16px;padding-inline:3.2%}
-.brand strong{display:block;transform:rotate(-3deg);font-size:clamp(27px,3vw,38px);letter-spacing:.01em}
-.brand img{width:48px;height:48px}
-.league-brand-label{font-size:12px;color:var(--muted);letter-spacing:.1em}
-.league-community{gap:20px}
-.league-community button{font-size:13px}
-.league-community .league-discord{padding:8px 0;border:0;background:none}
-.account-card{background:#34213c;border:1px solid #8c6b93;padding:8px 12px;max-width:24%}
-.account-card .avatar{width:28px;height:28px;border-radius:3px}
-.view-home .desk-body{display:flex;padding:0;overflow:hidden}
-.astral-home{display:grid;grid-template-rows:minmax(0,1fr) auto;flex:1;min-height:0;min-width:0}
-.astral-home .league-poster{height:auto;grid-template-columns:39% 61%;grid-template-rows:minmax(0,1fr);grid-template-areas:'menu film';background:#48234f}
-.astral-home .league-poster::before{inset:0 50% 0 0;mask-image:none;background:radial-gradient(#c593bb4d 1px,transparent 1.4px) 0 0/8px 8px;z-index:-1}
-.astral-home .league-poster::after{content:'';position:absolute;inset:0;background:#714481;clip-path:polygon(0 0,48% 0,37% 100%,0 100%);z-index:-2;pointer-events:none}
-.astral-home .league-menu{margin:0 0 0 11%;padding:18px 0;gap:5px;transform:none;z-index:2;max-width:95%}
-.astral-home .league-menu small{font-size:12px;letter-spacing:.09em;color:var(--gold);margin:0 0 min(2.5cqh,16px) 7px}
-.astral-home .league-menu button{position:relative;isolation:isolate;transform:rotate(var(--tilt));transition:transform .16s,color .16s;max-width:100%}
-.astral-home .league-menu button:nth-of-type(1){--tilt:-5deg;margin-bottom:10px}
-.astral-home .league-menu button:nth-of-type(2){--tilt:2deg}
-.astral-home .league-menu button:nth-of-type(3){--tilt:-3deg}
-.astral-home .league-menu button:nth-of-type(4){--tilt:3deg;margin-left:0}
-.astral-home .league-menu button:hover:not(:disabled){transform:translateX(8px) rotate(calc(var(--tilt) - 1deg))}
-.astral-home .league-menu button span{clip-path:polygon(2% 5%,97% 0,100% 91%,0 100%);padding:3px 16px 6px 9px;font-size:clamp(28px,min(4.9cqw,8.5cqh),75px);line-height:1.03;background:var(--ink);transition:background .16s,color .16s}
-.astral-home .league-menu button:hover:not(:disabled) span{background:var(--paper);color:var(--ink)}
-.astral-home .league-menu .league-play{min-width:0;min-height:0;padding:0;border:0;background:none;border-radius:0;display:block}
-.astral-home .league-menu .league-play span{background:var(--gold);color:var(--ink);padding:0 20px 7px 10px;font-size:clamp(58px,min(10.6cqw,19cqh),145px);letter-spacing:-.02em}
-.astral-home .league-menu .league-play:disabled span{font-size:clamp(26px,min(4.8cqw,11cqh),65px)}
-.astral-home .league-play b{font-family:Arial,sans-serif;font-size:.62em;vertical-align:10%;margin-left:7px}
-.astral-launch-state{margin:6px 0 0 7px;font-size:12px;line-height:1.45;color:var(--paper);max-width:250px;min-height:18px}
-.astral-home .league-mascot{left:15%;right:auto;top:34%;width:29%;opacity:.15;transform:rotate(-12deg);filter:none;z-index:0}
-.astral-home .league-film{margin:0 0 0 -8%;clip-path:polygon(10% 0,100% 0,100% 100%,0 100%);background:var(--gold)}
-.astral-home .league-film-frame{clip-path:polygon(10% 0,100% 0,100% 100%,0 100%);inset:0 0 0 5px;background:#25192d}
-.astral-home .league-film-frame::after{inset:0;background:linear-gradient(180deg,#180f2722 30%,#180f27c9 100%)}
-.astral-film-label{position:absolute;right:4%;top:22px;display:flex;gap:6px;align-items:center;transform:rotate(3deg);z-index:2;text-transform:uppercase}
-.astral-film-label strong{font:800 21px/1 var(--display);background:var(--paper);color:var(--ink);padding:6px 12px}
-.astral-film-label span{font-size:12px;font-weight:700;background:var(--ink);color:var(--gold);padding:7px 10px}
-.astral-home .league-film figcaption{bottom:30px;left:13%;right:6%;align-items:end}
-.astral-home .league-film figcaption small{background:var(--gold);color:var(--ink);font-size:12px;letter-spacing:0;text-transform:none;padding:5px 9px;transform:rotate(-3deg);margin-bottom:11px}
-.astral-home .league-film figcaption strong{font-size:clamp(28px,min(5cqw,10cqh),76px);line-height:.95;text-transform:uppercase;text-shadow:2px 3px 0 var(--ink)}
-.astral-home .league-film figcaption em{font-style:normal;color:var(--gold)}
-.astral-home .league-film figcaption button{position:absolute;right:0;bottom:-15px;padding:7px 11px;background:#1b1225d9;border:1px solid #f0dac2;border-radius:4px;font-size:12px;min-height:34px}
-.astral-progress{position:absolute;bottom:0;left:0;right:0;width:100%;height:5px;margin:0;z-index:4;border:0;appearance:none;border-radius:0}
-.astral-progress::-webkit-progress-bar{background:#201329}.astral-progress::-webkit-progress-value{background:var(--gold);border-radius:0}
-.astral-journal{padding:18px 3.5% 22px;background:#24182d}
-.astral-journal>header{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;gap:16px}
-.astral-journal h2{font:800 25px/1 var(--display);text-transform:uppercase;margin:0;transform:rotate(-2deg)}
-.astral-journal header button{display:flex;align-items:center;gap:6px;border:0;border-bottom:1px solid #ad829b;background:none;color:var(--gold);font-size:12px;padding:3px 0}
-.astral-journal header svg{width:14px;height:14px}
-.astral-stories{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:15px}
-.astral-story{display:grid;grid-template-columns:90px 1fr;gap:13px;align-items:center;background:#322139;border:1px solid #775570;border-radius:5px;padding:0 13px 0 0;text-align:left;min-height:92px;overflow:hidden;min-width:0}
-.astral-story:hover{transform:translateY(-3px);border-color:var(--gold)}
-.astral-story img{width:90px;height:92px;object-fit:cover}
-.astral-story small{display:block;color:var(--gold);font-size:11px;letter-spacing:.06em;margin-bottom:6px;font-weight:700}
-.astral-story strong{display:block;font:800 clamp(20px,2.5vw,32px)/1.04 var(--display)}
-.explorer-footer{background:var(--ink);padding:12px 3.5%;gap:16px}
-.league-tools{gap:20px}.league-tools button{font-size:13px}
-.desk-version{font-size:12px;gap:3px;border-left:1px solid var(--seam);padding-left:16px}
-.desk-version span{font-size:11px}.server-state{font-size:12px}
-.view-home .desk-play{display:none}
-.explorer .preparation-card{width:min(440px,80%);max-height:calc(100% - 30px);overflow:auto}
-@media(max-height:780px){.explorer-header{height:62px}.astral-journal{padding-block:12px 15px}.astral-journal>header{margin-bottom:9px}.astral-story{min-height:76px;grid-template-columns:72px 1fr;gap:10px}.astral-story img{width:72px;height:76px}.astral-story strong{font-size:25px}.astral-home .league-menu{gap:3px;padding-block:12px}.astral-home .league-menu small{margin-bottom:9px}.explorer-footer{padding-block:8px}.brand img{width:42px;height:42px}}
-@media(max-width:1150px){.explorer-header{gap:12px}.league-brand-label{display:none}.league-community{gap:15px}.astral-film-label span{font-size:11px}.astral-stories{gap:10px}.astral-story{gap:10px}.astral-story strong{font-size:25px}.astral-home .league-menu{margin-left:10%}.astral-launch-state{font-size:11px}}
-@media(max-width:960px){.brand strong{display:block}.astral-film-label span{display:none}.astral-stories{grid-template-columns:1fr 1fr}.astral-story:last-child{display:none}.desk-version{display:none}.league-community button:first-child{display:none}}
-@media(max-width:650px){.explorer-header{padding-inline:12px}.brand strong{font-size:26px}.league-community{display:none}.account-card{max-width:38%}.astral-home .league-menu{margin-left:8%}.astral-home .league-menu button span{font-size:clamp(21px,5cqw,38px)}.astral-home .league-menu .league-play span{font-size:clamp(38px,10.5cqw,70px)}.astral-home .league-film figcaption strong{font-size:clamp(22px,4.7cqw,40px)}.astral-film-label strong{font-size:17px}.astral-story strong{font-size:21px}.astral-story{grid-template-columns:55px 1fr;gap:7px}.astral-story img{width:55px}.astral-journal h2{font-size:22px}.astral-journal>header button{font-size:11px}.astral-launch-state{font-size:11px;max-width:145px}.astral-home .league-menu small{font-size:11px;letter-spacing:0}.league-tools{gap:12px}.league-tools button{font-size:12px}.server-address{font-size:11px}.explorer-footer .desk-server{margin-left:auto}}
-@media(prefers-reduced-motion:reduce){.astral-home .league-menu button:hover:not(:disabled){transform:rotate(var(--tilt))}.astral-story:hover{transform:none}}
+.explorer {
+  --paper:#fff1dc; --gold:#ffd382; --ink:#151021; --muted:#d3c5dd; --seam:#594865;
+  --league-gold:var(--gold); --league-cream:var(--paper);
+}
+.explorer-header {height:68px;background:#1c1528;border-bottom:1px solid var(--seam);gap:16px;padding-inline:3.5%}
+.brand strong {display:block;transform:none;font-size:clamp(24px,2.8vw,36px);letter-spacing:.015em}
+.brand img {width:46px;height:46px}
+.league-brand-label {font-size:12px;color:var(--muted);letter-spacing:.12em}
+.league-community button,.league-tools button {font-size:13px}
+.league-community .league-discord {background:#2c213d;border:1px solid #77608d;padding:5px 10px;border-radius:5px}
+.account-card {background:#292038;border:1px solid #736183;padding:8px 12px;max-width:24%;border-radius:5px}
+.account-card .avatar {width:28px;height:28px;border-radius:3px}
+.view-home .desk-body {display:flex;padding:0;overflow:auto}
+.astral-home {display:grid;grid-template-rows:minmax(0,1fr) auto;flex:1;min-height:0;min-width:0}
+.astral-home .league-poster {
+  height:auto;display:grid;grid-template: minmax(0,1fr) / minmax(240px,36%) minmax(0,1fr);
+  grid-template-areas:'menu film';background:#20172e;
+}
+.astral-home .league-poster::before {
+  inset:0;background:linear-gradient(105deg,#342644 0,transparent 53%),repeating-linear-gradient(90deg,#fff0 0 77px,#cfb2ea0c 78px 79px);
+  mask-image:none;z-index:-1;
+}
+.astral-home .league-menu {
+  margin:0;padding:16px clamp(19px,3.2vw,54px) 16px clamp(22px,4.6vw,82px);gap:12px;
+  transform:none;align-items:stretch;justify-self:stretch;min-width:0;
+}
+.horizons-heading p {font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#e0c5fc;margin-bottom:5px}
+.horizons-heading h1 {font:800 clamp(33px,min(5vw,12cqh),77px)/.92 var(--display);letter-spacing:-.015em;color:var(--paper)}
+.horizons-heading>span {display:flex;align-items:center;gap:9px;color:#ede0f8;font-size:13px;margin-top:11px}
+.horizons-heading i {width:4px;height:4px;background:var(--gold);display:block;transform:rotate(45deg)}
+.astral-home .league-menu button,.astral-home .league-menu .league-play {
+  display:flex;align-items:center;gap:9px;margin:0;padding:0 12px;border:1px solid #6e5884;border-radius:5px;
+  background:#2c223c;text-align:left;color:var(--paper);min-width:0;min-height:38px;transform:none;
+}
+.astral-home .league-menu button:hover:not(:disabled) {background:#423255;border-color:#c3a4e7;transform:none}
+.astral-home .league-menu button span {
+  background:none;clip-path:none;padding:0;font:inherit;font-size:12px;text-transform:none;overflow:hidden;text-overflow:ellipsis;
+}
+.astral-home .league-menu .league-play {
+  min-height:clamp(42px,12cqh,65px);background:var(--gold);color:#21172b;border-color:#ffe5b2;
+  box-shadow:0 3px 0 #8e6545; margin-top:3px;flex-shrink:0;
+}
+.astral-home .league-menu .league-play:hover:not(:disabled) {background:#ffe4ad;border-color:#fff4d3}
+.astral-home .league-menu .league-play>span {font:800 clamp(25px,6.5cqh,40px)/1 var(--display);color:inherit;background:none;flex:1;white-space:nowrap}
+.astral-home .league-menu .league-play:disabled>span {font-size:clamp(17px,4cqh,28px)}
+.astral-home .league-menu .league-play svg {width:19px;height:19px}
+.astral-home .league-menu button:focus-visible,.horizons-scenes button:focus-visible {outline-offset:2px}
+.horizons-shortcuts {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.astral-home .horizons-shortcuts button {padding-inline:5px;justify-content:center;gap:4px;white-space:nowrap}
+.astral-home .horizons-shortcuts button span {font-size:11px}
+.horizons-shortcuts svg {width:14px;height:14px;color:#d1b3f8}
+.astral-launch-state {font-size:12px;line-height:1.4;color:var(--muted);min-height:17px}
+.astral-home .league-film {margin:0;clip-path:none;background:#16101d;border-left:1px solid #7f647b}
+.astral-home .league-film-frame {clip-path:none;inset:0;background:#17101f}
+.astral-home .league-film-frame>img:not(.horizons-inset) {object-position:58% 55%}
+.astral-home .league-film-frame video {opacity:0;object-position:50% 42%}
+.astral-home .league-film-frame video.is-shown {opacity:1}
+.astral-home .league-film-frame .horizons-inset {object-fit:contain;background:#1c1528}
+.astral-home .league-film-frame::after {inset:0;background:linear-gradient(0deg,#130c21 0%,#130c21cc 14%,#130c2100 54%),linear-gradient(180deg,#1811217a,transparent 20%)}
+.league-film-hit-area {
+  position:absolute;inset:0;z-index:1;width:100%;border:0;padding:0;background:transparent;
+}
+.league-film-hit-area:focus-visible {outline:2px solid var(--gold);outline-offset:-3px}
+.astral-film-label {
+  position:absolute;left:clamp(15px,3.2vw,47px);top:18px;z-index:2;padding:5px 8px;border-radius:4px;
+  background:#1b1328df;border:1px solid #b49cbe;color:var(--paper);font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+}
+.astral-home .league-film :is(.astral-film-label,figcaption) {pointer-events:none}
+.astral-home .league-film figcaption {bottom:73px;left:clamp(15px,3.2vw,47px);right:clamp(14px,2.5vw,37px);align-items:center;z-index:1}
+.astral-home .league-film figcaption strong {font-size:clamp(23px,5vw,46px);line-height:1;text-shadow:0 2px 5px #0b0715}
+.horizons-scenes {position:absolute;bottom:12px;left:clamp(15px,3.2vw,47px);right:clamp(14px,2.5vw,37px);display:flex;gap:7px;z-index:2;pointer-events:none}
+.horizons-scenes button {
+  min-width:0;display:flex;align-items:center;gap:7px;border:1px solid #786884;border-radius:5px;
+  background:#21192ee8;color:var(--paper);padding:3px 8px 3px 3px;text-align:left;font-size:11px;
+  flex:0 1 147px;overflow:hidden;pointer-events:auto;
+}
+.horizons-scenes button:hover {border-color:var(--paper)}
+.horizons-scenes button[aria-pressed=true] {border-color:var(--gold);background:#473650;color:#ffdf9e}
+.horizons-scenes img {width:35px;height:35px;object-fit:cover;border-radius:2px;flex-shrink:0}
+.horizons-scenes span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.astral-progress {position:absolute;bottom:0;left:0;right:0;width:100%;height:5px;margin:0;z-index:4;border:0;appearance:none;border-radius:0}
+.astral-progress::-webkit-progress-bar {background:#201329}
+.astral-progress::-webkit-progress-value {background:var(--gold);border-radius:0}
+.astral-journal {padding:14px 3.5% 17px;background:#1c1528;border-top:1px solid #51415e}
+.astral-journal>header {display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:16px}
+.astral-journal h2 {font:800 24px/1 var(--display);margin:0}
+.astral-journal header button {display:flex;align-items:center;gap:6px;border:0;background:none;color:var(--gold);font-size:12px;padding:3px 0}
+.astral-journal header svg {width:14px;height:14px}
+.astral-stories {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.astral-story {display:grid;grid-template-columns:74px 1fr;gap:10px;align-items:center;background:#2a2039;border:1px solid #514363;border-radius:5px;padding:0 10px 0 0;text-align:left;min-height:70px;overflow:hidden;min-width:0}
+.astral-story:hover {border-color:var(--gold)}
+.astral-story img {width:74px;height:70px;object-fit:cover}
+.astral-story small {display:block;color:var(--gold);font-size:10px;margin-bottom:4px;font-weight:700}
+.astral-story strong {display:block;font:800 clamp(16px,2vw,27px)/1.04 var(--display)}
+.explorer-footer {background:var(--ink);padding:10px 3.5%;gap:15px}
+.league-tools {gap:16px}
+.desk-version {font-size:12px;gap:3px;border-left:1px solid var(--seam);padding-left:16px}
+.desk-version span {font-size:11px}
+.server-state {font-size:12px}
+.view-home .desk-play {display:none}
+.explorer .preparation-card {width:min(440px,80%);max-height:calc(100% - 30px);overflow:auto}
+@media(max-height:720px) {
+  .explorer-header {height:54px}
+  .brand img {width:37px;height:37px}
+  .astral-home .league-menu {gap:8px;padding-block:12px}
+  .horizons-heading>span {margin-top:7px}
+  .astral-journal {padding-block:9px 11px}
+  .astral-story {min-height:54px;grid-template-columns:55px 1fr}
+  .astral-story img {width:55px;height:54px}
+  .explorer-footer {padding-block:7px}
+}
+@media(max-width:960px) {
+  .desk-version,.league-community button:first-child {display:none}
+  .astral-home .league-poster {grid-template-columns:minmax(238px,40%) minmax(0,1fr)}
+  .astral-home .league-menu {padding-inline:22px}
+  .astral-home .horizons-shortcuts button {padding-inline:5px}
+}
+@media(max-width:760px) {
+  .astral-home .horizons-shortcuts svg {display:none}
+  .horizons-scenes img {width:27px}
+  .astral-stories {gap:7px}
+}
+@media(max-height:575px) {.astral-home {grid-template-rows:minmax(240px,1fr) auto}}
+@media(prefers-reduced-motion:reduce) {.astral-home .league-film-frame video {transition:none}}
